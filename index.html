@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Oasis Lights</title>
+<style>
+  :root{--bg:#0b0d12;--card:#151924;--line:#262c3a;--fg:#e8ecf5;--muted:#8893a7;--accent:#3b82f6;--ok:#22c55e;--err:#ef4444}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+  .wrap{max-width:560px;margin:0 auto;padding:16px 16px 48px}
+  h1{font-size:21px;margin:4px 0 2px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:14px}
+  .label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:#1b2130;color:var(--fg);font-size:13px;cursor:pointer}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  #connect{width:100%;padding:15px;border-radius:14px;border:none;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer}
+  #connect.connected{background:#143024;color:var(--ok);border:1px solid #1f5137}
+  #sv{position:relative;width:100%;height:190px;border-radius:12px;cursor:crosshair;background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(240 100% 50%));touch-action:none}
+  #svh{position:absolute;width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+  .hue{position:relative;height:24px;margin-top:14px;border-radius:999px;touch-action:none;cursor:pointer;background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
+  #hueh{position:absolute;top:50%;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5);transform:translate(-50%,-50%);pointer-events:none}
+  .preview{display:flex;align-items:center;gap:12px;margin-top:14px}
+  .swatch{width:46px;height:46px;border-radius:12px;border:1px solid var(--line)}
+  .hex{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+  .swatches{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .ps{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);cursor:pointer}
+  input[type=range]{width:100%;accent-color:var(--accent);height:30px}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .btn{padding:13px;border-radius:12px;border:1px solid var(--line);background:#1b2130;color:var(--fg);font-size:15px;font-weight:600;cursor:pointer}
+  .btn.off{color:#ff6b6b}
+  .tabs{display:flex;gap:8px;margin-bottom:12px}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:10px;border:1px solid var(--line);background:#1b2130;cursor:pointer;font-size:14px}
+  .tab.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .hide{display:none}
+  .status{font-size:12px;text-align:center;min-height:16px;margin-top:6px;color:var(--muted)}
+  .val{color:var(--fg);font-variant-numeric:tabular-nums}
+  .gate{opacity:.4;pointer-events:none}
+  .note{color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Oasis Lights</h1>
+  <div class="sub">Direct Bluetooth · full color spectrum · no Mac needed</div>
+
+  <div class="card">
+    <button id="connect">Connect Bluetooth</button>
+    <div class="status" id="status">Tap connect, then pick your lamp from the list.</div>
+    <div class="note" id="hint"></div>
+  </div>
+
+  <div class="card hide" id="setupcard">
+    <div class="label">One-time setup on this device</div>
+    <div class="note">Paste your personal setup link (the one ending in <code>#net=…&app=…</code>) to load your lamp keys onto this phone. They stay only on this device.</div>
+    <input id="keyin" placeholder="paste your setup link here" autocomplete="off" autocapitalize="off" spellcheck="false" style="width:100%;margin-top:10px;padding:11px;border-radius:10px;border:1px solid var(--line);background:#1b2130;color:var(--fg);font-size:14px">
+    <button class="btn" id="savekeys" style="width:100%;margin-top:10px">Save &amp; start</button>
+  </div>
+
+  <div id="panel" class="gate">
+    <div class="card">
+      <div class="label">Target</div>
+      <div class="chips" id="targets"></div>
+    </div>
+
+    <div class="tabs">
+      <div class="tab on" data-tab="color">Color</div>
+      <div class="tab" data-tab="white">White</div>
+    </div>
+
+    <div class="card" id="tab-color">
+      <div class="label">Color</div>
+      <div id="sv"><div id="svh"></div></div>
+      <div class="hue"><div id="hueh"></div></div>
+      <div class="preview"><div class="swatch" id="swatch"></div>
+        <div><div class="hex" id="hex">#0000ff</div><div class="hex" id="rgbtxt">rgb(0, 0, 255)</div></div></div>
+      <div class="swatches" id="presets"></div>
+      <div class="label" style="margin-top:16px">Brightness · <span class="val" id="brv">100%</span></div>
+      <input type="range" id="bright" min="1" max="100" value="100">
+    </div>
+
+    <div class="card hide" id="tab-white">
+      <div class="label">Warmth · <span class="val" id="ktv">4000K</span></div>
+      <input type="range" id="kelvin" min="2700" max="6500" step="50" value="4000">
+      <div class="label" style="margin-top:16px">Brightness · <span class="val" id="wbrv">80%</span></div>
+      <input type="range" id="wbright" min="1" max="100" value="80">
+      <button class="btn" id="applywhite" style="margin-top:14px;width:100%">Apply white</button>
+    </div>
+
+    <div class="card">
+      <div class="row"><button class="btn" id="on">Power On</button><button class="btn off" id="off">Power Off</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== mesh_ble.js (verified byte-for-byte vs Python) ===== */
+(function (global) {
+  'use strict';
+  const u8 = (n) => new Uint8Array(n);
+  const hexToBytes = (h) => { const a = u8(h.length / 2); for (let i = 0; i < a.length; i++) a[i] = parseInt(h.substr(i * 2, 2), 16); return a; };
+  const bytesToHex = (a) => Array.from(a).map(b => b.toString(16).padStart(2, '0')).join('');
+  const ascii = (s) => Uint8Array.from(s, c => c.charCodeAt(0));
+  const concat = (...arr) => { let n = 0; arr.forEach(x => n += x.length); const o = u8(n); let k = 0; arr.forEach(x => { o.set(x, k); k += x.length; }); return o; };
+  const xor = (a, b) => { const o = u8(a.length); for (let i = 0; i < a.length; i++) o[i] = a[i] ^ b[i]; return o; };
+  const beU = (v, n) => { const o = u8(n); for (let i = n - 1; i >= 0; i--) { o[i] = v & 0xff; v = Math.floor(v / 256); } return o; };
+  function gmul(a, b) { let p = 0; for (let i = 0; i < 8; i++) { if (b & 1) p ^= a; const hi = a & 0x80; a = (a << 1) & 0xff; if (hi) a ^= 0x1b; b >>= 1; } return p; }
+  const SBOX = u8(256);
+  (function () { const exp = u8(256), log = u8(256); let a = 1; for (let i = 0; i < 255; i++) { exp[i] = a; log[a] = i; a = gmul(a, 3); } const inv = (b) => b === 0 ? 0 : exp[(255 - log[b]) % 255]; const rotl = (v, n) => ((v << n) | (v >> (8 - n))) & 0xff; for (let b = 0; b < 256; b++) { const s = inv(b); SBOX[b] = s ^ rotl(s, 1) ^ rotl(s, 2) ^ rotl(s, 3) ^ rotl(s, 4) ^ 0x63; } })();
+  const RCON = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36];
+  function expandKey(key) { const w = []; for (let i = 0; i < 4; i++) w.push([key[4 * i], key[4 * i + 1], key[4 * i + 2], key[4 * i + 3]]); for (let i = 4; i < 44; i++) { let t = w[i - 1].slice(); if (i % 4 === 0) { t = [t[1], t[2], t[3], t[0]].map(x => SBOX[x]); t[0] ^= RCON[i / 4 - 1]; } w.push(w[i - 4].map((x, j) => x ^ t[j])); } return w; }
+  function aesEncrypt(key, block) { const w = expandKey(key); let s = [[], [], [], []]; for (let i = 0; i < 16; i++) s[i % 4][Math.floor(i / 4)] = block[i]; const addRK = (r) => { for (let c = 0; c < 4; c++) for (let row = 0; row < 4; row++) s[row][c] ^= w[r * 4 + c][row]; }; addRK(0); for (let round = 1; round <= 10; round++) { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) s[r][c] = SBOX[s[r][c]]; for (let r = 1; r < 4; r++) { const row = s[r].slice(); for (let c = 0; c < 4; c++) s[r][c] = row[(c + r) % 4]; } if (round !== 10) { for (let c = 0; c < 4; c++) { const a0 = s[0][c], a1 = s[1][c], a2 = s[2][c], a3 = s[3][c]; s[0][c] = gmul(a0, 2) ^ gmul(a1, 3) ^ a2 ^ a3; s[1][c] = a0 ^ gmul(a1, 2) ^ gmul(a2, 3) ^ a3; s[2][c] = a0 ^ a1 ^ gmul(a2, 2) ^ gmul(a3, 3); s[3][c] = gmul(a0, 3) ^ a1 ^ a2 ^ gmul(a3, 2); } } addRK(round); } const o = u8(16); for (let i = 0; i < 16; i++) o[i] = s[i % 4][Math.floor(i / 4)]; return o; }
+  function shl1(b) { const o = u8(16); let carry = 0; for (let i = 15; i >= 0; i--) { o[i] = ((b[i] << 1) | carry) & 0xff; carry = (b[i] & 0x80) ? 1 : 0; } return o; }
+  function cmac(key, msg) { const L = aesEncrypt(key, u8(16)); let K1 = shl1(L); if (L[0] & 0x80) K1[15] ^= 0x87; let K2 = shl1(K1); if (K1[0] & 0x80) K2[15] ^= 0x87; const complete = msg.length > 0 && msg.length % 16 === 0; const n = Math.max(1, Math.ceil(msg.length / 16)); let X = u8(16); for (let i = 0; i < n - 1; i++) X = aesEncrypt(key, xor(X, msg.subarray(i * 16, i * 16 + 16))); let last = u8(16); const rem = msg.subarray((n - 1) * 16); last.set(rem); if (complete) { last = xor(last, K1); } else { last[rem.length] = 0x80; last = xor(last, K2); } return aesEncrypt(key, xor(X, last)); }
+  function ccmEncrypt(key, nonce, plaintext, tagLen) { const L = 15 - nonce.length; const flags = (((tagLen - 2) / 2) << 3) | (L - 1); const B0 = u8(16); B0[0] = flags; B0.set(nonce, 1); B0[14] = (plaintext.length >> 8) & 0xff; B0[15] = plaintext.length & 0xff; let X = aesEncrypt(key, B0); for (let i = 0; i < plaintext.length; i += 16) { const blk = u8(16); blk.set(plaintext.subarray(i, i + 16)); X = aesEncrypt(key, xor(X, blk)); } const T = X.subarray(0, tagLen); const ctrBlock = (ctr) => { const A = u8(16); A[0] = L - 1; A.set(nonce, 1); A[14] = (ctr >> 8) & 0xff; A[15] = ctr & 0xff; return aesEncrypt(key, A); }; const S0 = ctrBlock(0); const out = u8(plaintext.length + tagLen); let ctr = 1; for (let i = 0; i < plaintext.length; i += 16) { const S = ctrBlock(ctr++); for (let j = 0; j < 16 && i + j < plaintext.length; j++) out[i + j] = plaintext[i + j] ^ S[j]; } for (let i = 0; i < tagLen; i++) out[plaintext.length + i] = T[i] ^ S0[i]; return out; }
+  const s1 = (m) => cmac(u8(16), m);
+  const k1 = (material, salt, info) => cmac(cmac(salt, material), info);
+  function k2(netKey) { const t = cmac(s1(ascii('smk2')), netKey); const t1 = cmac(t, Uint8Array.of(0x00, 0x01)); const t2 = cmac(t, concat(t1, Uint8Array.of(0x00, 0x02))); const t3 = cmac(t, concat(t2, Uint8Array.of(0x00, 0x03))); return { nid: t1[15] & 0x7f, enc: t2, priv: t3 }; }
+  function k3(netKey) { const t = cmac(s1(ascii('smk3')), netKey); return cmac(t, concat(ascii('id64'), Uint8Array.of(1))).subarray(8); }
+  function k4(appKey) { const t = cmac(s1(ascii('smk4')), appKey); return cmac(t, concat(ascii('id6'), Uint8Array.of(1)))[15] & 0x3f; }
+  function beaconKey(netKey) { return k1(netKey, s1(ascii('nkbk')), concat(ascii('id128'), Uint8Array.of(1))); }
+  function authenticateBeacon(netKey, p) { if (p.length !== 22 || p[0] !== 1 || (p[1] & ~3)) return false; const nid64 = k3(netKey); for (let i = 0; i < 8; i++) if (nid64[i] !== p[2 + i]) return false; const mac = cmac(beaconKey(netKey), p.subarray(1, 14)); for (let i = 0; i < 8; i++) if (mac[i] !== p[14 + i]) return false; return true; }
+  function privacyMask(key, iv, encrypted) { const block = concat(u8(5), beU(iv, 4), encrypted.subarray(0, 7)); return aesEncrypt(key, block).subarray(0, 6); }
+  function encryptNetwork(netKey, iv, m) { const { nid, enc, priv } = k2(netKey); const header = concat(Uint8Array.of((m.ctl << 7) | m.ttl), beU(m.seq, 3), beU(m.src, 2)); const nonce = concat(Uint8Array.of(0), header, u8(2), beU(iv, 4)); const plaintext = concat(beU(m.dst, 2), m.lower); const encrypted = ccmEncrypt(enc, nonce, plaintext, m.ctl ? 8 : 4); const obf = xor(header, privacyMask(priv, iv, encrypted)); return concat(Uint8Array.of(((iv & 1) << 7) | nid), obf, encrypted); }
+  function encryptAccess(key, iv, seq, src, dst, access, deviceKey) { const nonce = concat(Uint8Array.of(deviceKey ? 2 : 1, 0), beU(seq, 3), beU(src, 2), beU(dst, 2), beU(iv, 4)); const encrypted = ccmEncrypt(key, nonce, access, 4); return concat(Uint8Array.of(deviceKey ? 0 : (0x40 | k4(key))), encrypted); }
+  function fragmentProxy(type, payload, valueSize) { valueSize = valueSize || 20; const width = valueSize - 1; const chunks = []; for (let i = 0; i < payload.length; i += width) chunks.push(payload.subarray(i, i + width)); if (chunks.length === 1) return [concat(Uint8Array.of(type), chunks[0])]; return chunks.map((c, i) => concat(Uint8Array.of(((i === 0 ? 1 : i === chunks.length - 1 ? 3 : 2) << 6) | type), c)); }
+  function Reassembler() { this.type = null; this.buf = []; }
+  Reassembler.prototype.feed = function (value) { if (value.length < 2) { this.type = null; this.buf = []; throw new Error('short'); } const sar = value[0] >> 6, type = value[0] & 63; if (type > 3) { this.type = null; this.buf = []; throw new Error('reserved'); } if (sar === 0 || sar === 1) { if (this.type !== null) { this.type = null; this.buf = []; throw new Error('interrupt'); } this.type = type; } else if (this.type !== type) { this.type = null; this.buf = []; throw new Error('mismatch'); } for (let i = 1; i < value.length; i++) this.buf.push(value[i]); if (sar === 0 || sar === 3) { const out = Uint8Array.from(this.buf); const t = this.type; this.type = null; this.buf = []; return [t, out]; } return null; };
+  function parseBeaconIV(p) { if (p.length !== 22 || p[0] !== 1) throw new Error('beacon'); return (p[10] * 16777216 + (p[11] << 16) + (p[12] << 8) + p[13]) >>> 0; }
+  const cmd = {
+    colorMode: (rgb) => Uint8Array.of(0xcc, 0xe5, 0x02, rgb ? 1 : 2),
+    rgb: (r, g, b) => Uint8Array.of(0xc6, 0xe5, 0x02, r & 0xff, g & 0xff, b & 0xff),
+    power: (on) => Uint8Array.of(0xc3, 0xe5, 0x02, on ? 1 : 0),
+    brightness: (pct, epochSec) => Uint8Array.of(0xc4, 0xe5, 0x02, pct & 0xff, epochSec & 0xff, (epochSec >>> 8) & 0xff, (epochSec >>> 16) & 0xff, (epochSec >>> 24) & 0xff),
+    brightnessTemp: (pct, kelvin, epochMs) => Uint8Array.of(0xd2, 0xe5, 0x02, kelvin & 0xff, (kelvin >>> 8) & 0xff, pct & 0xff, epochMs & 0xff, (epochMs >>> 8) & 0xff, (epochMs >>> 16) & 0xff, (epochMs >>> 24) & 0xff),
+  };
+  global.MESH = { hexToBytes, bytesToHex, aesEncrypt, cmac, k2, k4, authenticateBeacon, encryptNetwork, encryptAccess, fragmentProxy, Reassembler, parseBeaconIV, cmd };
+})(window);
+
+/* ===== Config (your mesh) — NO SECRET KEYS in this file ===== */
+const CFG = {
+  meshUUID: '40B97412-0990-4717-8274-3C1F47A73CF5',
+  source: 0x7ffe,                                   // this phone's mesh sender (distinct from the Mac's)
+  groups: { livingRoomID: 0xE9E6, bedroomID: 0xD77A },
+  lamps: [['OASIS_9796f4', 0x4967], ['OASIS_7b37c4', 0x5BC7], ['OASIS_99bc80', 0x778C], ['OASIS_577000', 0x7105], ['OASIS_94378c', 0x0102], ['OASIS_af8528', 0x0103]],
+};
+const SVC = 0x1828;
+const UUID_IN = '00002add-0000-1000-8000-00805f9b34fb';
+const UUID_OUT = '00002ade-0000-1000-8000-00805f9b34fb';
+
+// Secret keys never live in this page. They arrive via your private link (#net=..&app=..)
+// and are then kept only in THIS device's local storage.
+function loadKeys() {
+  try {
+    const h = new URLSearchParams(location.hash.slice(1));
+    const hn = (h.get('net') || '').trim(), ha = (h.get('app') || '').trim();
+    if (/^[0-9a-fA-F]{32}$/.test(hn) && /^[0-9a-fA-F]{32}$/.test(ha)) {
+      localStorage.setItem('oasis_net', hn.toLowerCase());
+      localStorage.setItem('oasis_app', ha.toLowerCase());
+      history.replaceState(null, '', location.pathname + location.search); // strip keys from the address bar
+    }
+  } catch (_) { }
+  const n = localStorage.getItem('oasis_net'), a = localStorage.getItem('oasis_app');
+  if (n && a && /^[0-9a-f]{32}$/.test(n) && /^[0-9a-f]{32}$/.test(a)) return { net: n, app: a };
+  return null;
+}
+let KEYS = loadKeys();
+let NET = KEYS ? MESH.hexToBytes(KEYS.net) : null;
+let APP = KEYS ? MESH.hexToBytes(KEYS.app) : null;
+
+/* ===== Bluetooth transport ===== */
+let dev = null, chIn = null, chOut = null, reasm = null, iv = null, connected = false, busy = false;
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function setStatus(t, cls) { const s = $('#status'); s.textContent = t; s.style.color = cls === 'ok' ? 'var(--ok)' : cls === 'err' ? 'var(--err)' : 'var(--muted)'; }
+
+function onNotify(e) {
+  const v = new Uint8Array(e.target.value.buffer);
+  try { const res = reasm.feed(v); if (res) { const t = res[0], data = res[1]; if (t === 1 && MESH.authenticateBeacon(NET, data)) iv = MESH.parseBeaconIV(data); } }
+  catch (_) { }
+}
+function onDisconnect() { connected = false; $('#panel').classList.add('gate'); $('#connect').classList.remove('connected'); $('#connect').textContent = 'Reconnect Bluetooth'; setStatus('Disconnected — tap to reconnect.', 'err'); }
+
+async function connect() {
+  if (!NET) { setStatus('Finish the one-time setup below first.', 'err'); return; }
+  if (!navigator.bluetooth) { setStatus('This browser has no Bluetooth. On iPhone use the Bluefy app; on Android use Chrome.', 'err'); return; }
+  setStatus('Choose a lamp named OASIS_… in the Bluetooth popup…');
+  try {
+    dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
+    dev.addEventListener('gattserverdisconnected', onDisconnect);
+    setStatus('Connecting…');
+    const server = await dev.gatt.connect();
+    const svc = await server.getPrimaryService(SVC);
+    chIn = await svc.getCharacteristic(UUID_IN);
+    chOut = await svc.getCharacteristic(UUID_OUT);
+    reasm = new MESH.Reassembler(); iv = null;
+    await chOut.startNotifications();
+    chOut.addEventListener('characteristicvaluechanged', onNotify);
+    setStatus('Waiting for the mesh to say hello…');
+    const t0 = Date.now(); while (iv === null && Date.now() - t0 < 20000) await sleep(150);
+    if (iv === null) { setStatus('Connected but no mesh beacon — move closer to a lamp and reconnect.', 'err'); return; }
+    connected = true;
+    $('#panel').classList.remove('gate');
+    $('#connect').classList.add('connected'); $('#connect').textContent = 'Bluetooth connected ✓';
+    setStatus('Connected. Pick a target and a color.', 'ok');
+  } catch (err) {
+    setStatus('Could not connect: ' + (err.message || err), 'err');
+  }
+}
+
+function writeChunk(c) { return chIn.writeValueWithoutResponse ? chIn.writeValueWithoutResponse(c) : chIn.writeValue(c); }
+function nextSeq() {
+  const key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv;
+  let s = parseInt(localStorage.getItem(key) || '', 10);
+  if (!Number.isFinite(s)) s = Math.floor(Date.now() / 1000) % 0x800000; // time-seeded; survives storage clears
+  localStorage.setItem(key, String((s + 1) & 0xffffff));
+  return s & 0xffffff;
+}
+async function sendAccess(dst, access) {
+  const seq = nextSeq();
+  const lower = MESH.encryptAccess(APP, iv, seq, CFG.source, dst, access, false);
+  const pdu = MESH.encryptNetwork(NET, iv, { ctl: 0, ttl: 5, seq, src: CFG.source, dst, lower });
+  for (const chunk of MESH.fragmentProxy(0, pdu)) { await writeChunk(chunk); }
+}
+function resolve(target) {
+  if (target === 'all') return Object.values(CFG.groups);
+  if (CFG.groups[target] != null) return [CFG.groups[target]];
+  const l = CFG.lamps.find(x => x[0] === target); if (l) return [l[1]];
+  return [];
+}
+let target = 'all';
+async function command(accesses) {
+  if (!connected) { setStatus('Tap Connect Bluetooth first.', 'err'); return; }
+  if (busy) return; busy = true;
+  try {
+    const dsts = resolve(target);
+    for (let rep = 0; rep < 2; rep++) { for (const dst of dsts) { for (const a of accesses) { await sendAccess(dst, a); await sleep(35); } } await sleep(110); }
+    setStatus('Sent ✓', 'ok');
+  } catch (err) { setStatus('Send failed: ' + (err.message || err), 'err'); connected = connected && dev && dev.gatt.connected; }
+  finally { busy = false; }
+}
+
+/* ===== Color picker ===== */
+let hue = 240, sat = 1, val = 1;
+function hsv2rgb(h, s, v) { h /= 360; let i = Math.floor(h * 6), f = h * 6 - i, p = v * (1 - s), q = v * (1 - f * s), t = v * (1 - (1 - f) * s), r, g, b; switch (i % 6) { case 0: r = v, g = t, b = p; break; case 1: r = q, g = v, b = p; break; case 2: r = p, g = v, b = t; break; case 3: r = p, g = q, b = v; break; case 4: r = t, g = p, b = v; break; case 5: r = v, g = p, b = q; break; } return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]; }
+const hx = n => n.toString(16).padStart(2, '0');
+let colorTimer = null;
+function sendColor() {
+  const [r, g, b] = hsv2rgb(hue, sat, val);
+  $('#swatch').style.background = `rgb(${r},${g},${b})`;
+  $('#hex').textContent = '#' + hx(r) + hx(g) + hx(b);
+  $('#rgbtxt').textContent = `rgb(${r}, ${g}, ${b})`;
+  clearTimeout(colorTimer);
+  colorTimer = setTimeout(() => command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]), 120);
+}
+const sv = $('#sv');
+function svFromEvent(e) { const rect = sv.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX, cy = e.touches ? e.touches[0].clientY : e.clientY; const x = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)), y = Math.max(0, Math.min(1, (cy - rect.top) / rect.height)); sat = x; val = 1 - y; $('#svh').style.left = (x * 100) + '%'; $('#svh').style.top = (y * 100) + '%'; sendColor(); }
+const huebar = $('.hue');
+function hueFromEvent(e) { const rect = huebar.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const x = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); hue = x * 360; $('#hueh').style.left = (x * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; sendColor(); }
+function drag(el, handler) { const down = e => { e.preventDefault(); handler(e); const mv = ev => { ev.preventDefault(); handler(ev); }; const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); window.removeEventListener('touchmove', mv); window.removeEventListener('touchend', up); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); window.addEventListener('touchmove', mv, { passive: false }); window.addEventListener('touchend', up); }; el.addEventListener('mousedown', down); el.addEventListener('touchstart', down, { passive: false }); }
+drag(sv, svFromEvent); drag(huebar, hueFromEvent);
+function initHandles() { $('#hueh').style.left = (hue / 360 * 100) + '%'; $('#svh').style.left = (sat * 100) + '%'; $('#svh').style.top = ((1 - val) * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; const [r, g, b] = hsv2rgb(hue, sat, val); $('#swatch').style.background = `rgb(${r},${g},${b})`; $('#hex').textContent = '#' + hx(r) + hx(g) + hx(b); $('#rgbtxt').textContent = `rgb(${r}, ${g}, ${b})`; }
+const PRE = [['Red', [255, 0, 0]], ['Orange', [255, 90, 0]], ['Yellow', [255, 220, 0]], ['Green', [0, 255, 0]], ['Cyan', [0, 255, 255]], ['Blue', [0, 0, 255]], ['Deep Blue', [0, 40, 255]], ['Indigo', [75, 0, 255]], ['Purple', [160, 0, 255]], ['Magenta', [255, 0, 200]], ['Pink', [255, 80, 160]], ['White', [255, 255, 255]]];
+const pc = $('#presets');
+PRE.forEach(([name, [r, g, b]]) => { const d = document.createElement('div'); d.className = 'ps'; d.title = name; d.style.background = `rgb(${r},${g},${b})`; d.onclick = () => { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0; const s = mx ? (mx - mn) / mx : 0, v = mx / 255; if (mx !== mn) { const dd = mx - mn; if (mx === r) h = ((g - b) / dd) % 6; else if (mx === g) h = (b - r) / dd + 2; else h = (r - g) / dd + 4; h *= 60; if (h < 0) h += 360; } hue = h; sat = s; val = v; initHandles(); command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]); }; pc.appendChild(d); });
+
+$('#bright').addEventListener('input', e => $('#brv').textContent = e.target.value + '%');
+let brTimer = null;
+$('#bright').addEventListener('change', e => { clearTimeout(brTimer); brTimer = setTimeout(() => command([MESH.cmd.brightness(+e.target.value, Math.floor(Date.now() / 1000))]), 60); });
+$('#kelvin').addEventListener('input', e => $('#ktv').textContent = e.target.value + 'K');
+$('#wbright').addEventListener('input', e => $('#wbrv').textContent = e.target.value + '%');
+$('#applywhite').addEventListener('click', () => command([MESH.cmd.colorMode(false), MESH.cmd.brightnessTemp(+$('#wbright').value, +$('#kelvin').value, Date.now() >>> 0)]));
+$('#on').addEventListener('click', () => command([MESH.cmd.power(true)]));
+$('#off').addEventListener('click', () => command([MESH.cmd.power(false)]));
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); const c = t.dataset.tab; $('#tab-color').classList.toggle('hide', c !== 'color'); $('#tab-white').classList.toggle('hide', c !== 'white'); });
+
+const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
+(function buildTargets() { const box = $('#targets'); const add = (id, txt, on) => { const c = document.createElement('div'); c.className = 'chip' + (on ? ' on' : ''); c.textContent = txt; c.onclick = () => { target = id; document.querySelectorAll('.chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); }; box.appendChild(c); }; add('all', 'All', true); Object.keys(CFG.groups).forEach(g => add(g, NICE[g] || g, false)); CFG.lamps.forEach(([n]) => add(n, n.replace('OASIS_', 'Lamp '), false)); })();
+
+$('#connect').addEventListener('click', connect);
+
+/* ===== One-time key setup (keys live only on this device) ===== */
+function extractKeys(text) { const m = (text || '').match(/[0-9a-fA-F]{32}/g); return (m && m.length >= 2) ? { net: m[0].toLowerCase(), app: m[1].toLowerCase() } : null; }
+$('#savekeys').addEventListener('click', () => {
+  const k = extractKeys($('#keyin').value);
+  if (!k) { setStatus('That didn’t contain two 32-character keys — paste the whole setup link.', 'err'); return; }
+  localStorage.setItem('oasis_net', k.net); localStorage.setItem('oasis_app', k.app); location.reload();
+});
+if (!KEYS) { $('#setupcard').classList.remove('hide'); $('#connect').textContent = 'Finish setup first'; setStatus('First time on this device? Do the one-time setup below.'); }
+if (!navigator.bluetooth) $('#hint').textContent = 'Heads up: this browser can’t do Bluetooth. On iPhone, open this page in the free Bluefy app. On Android, use Chrome.';
+initHandles();
+</script>
+</body>
+</html>
