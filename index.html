@@ -297,7 +297,7 @@ drag(sv, svFromEvent); drag(huebar, hueFromEvent);
 function setPickerRGB(r, g, b) { const [h, s, v] = rgb2hsv(r, g, b); hue = h; sat = s; val = v; $('#hueh').style.left = (hue / 360 * 100) + '%'; $('#svh').style.left = (sat * 100) + '%'; $('#svh').style.top = ((1 - val) * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; paintPreview(); }
 
 /* ===== OASIS Originals (matched to the app's scene palette) ===== */
-const ORIGINALS = [['Bright', [253, 249, 238]], ['Neutral', [251, 240, 216]], ['Soft', [250, 226, 177]], ['Amber', [247, 197, 105]], ['Candle', [243, 183, 75]], ['Dusk', [235, 151, 76]], ['Maui', [246, 107, 25]], ['Pure Red', [214, 40, 21]]];
+const ORIGINALS = [['Bright', [255, 221, 168]], ['Neutral', [255, 196, 130]], ['Soft', [255, 168, 92]], ['Amber', [255, 140, 52]], ['Candle', [255, 112, 30]], ['Dusk', [255, 82, 18]], ['Maui', [255, 46, 6]], ['Pure Red', [255, 0, 0]]];
 (function buildOriginals() { const box = $('#originals'); ORIGINALS.forEach(([name, [r, g, b]]) => { const el = document.createElement('div'); el.className = 'orig'; el.innerHTML = `<div class="disc" style="background:rgb(${r},${g},${b})"></div><div class="nm">${name}</div>`; el.onclick = () => { buzz(); document.querySelectorAll('.orig').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]); }; box.appendChild(el); }); })();
 
 /* ===== Full-spectrum vivid presets ===== */
