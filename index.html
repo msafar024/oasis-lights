@@ -86,6 +86,7 @@
   .btn:active{transform:translateY(1px)}
   .btn.primary{background:linear-gradient(180deg,#4a8bff,#2f6ff0);border:none;color:#fff}
   .btn.off{color:#ff7b7b}
+  .btn.danger{background:linear-gradient(180deg,#f0506e,#e11d48);border:none;color:#fff}
   .gate{opacity:.38;pointer-events:none;filter:saturate(.6)}
   input#keyin{width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:15px}
 </style>
@@ -119,6 +120,7 @@
       <button class="tab on" data-tab="originals">Originals</button>
       <button class="tab" data-tab="color">Color</button>
       <button class="tab" data-tab="white">White</button>
+      <button class="tab" data-tab="party">Party</button>
     </div>
 
     <!-- OASIS Originals -->
@@ -146,6 +148,15 @@
       <div class="srow"><span class="end">Dim</span><span class="val" id="wbrv">80%</span><span class="end">Bright</span></div>
       <input type="range" id="wbright" min="1" max="100" value="80">
       <button class="btn primary" id="applywhite" style="width:100%;margin-top:14px">Apply white</button>
+    </div>
+
+    <!-- Party -->
+    <div class="card pane hide" id="pane-party">
+      <div class="label">Party mode 🎉</div>
+      <div class="note">Your lamps chase through the rainbow together. It only sends colors — it can't harm the lamps — and Stop halts it instantly.</div>
+      <button class="btn primary" id="party" style="width:100%;margin-top:12px;font-size:17px">Start Party 🎉</button>
+      <div class="srow" style="margin-top:18px"><span class="end">Chill</span><span class="val" id="spv">Groovy</span><span class="end">Rave</span></div>
+      <input type="range" id="speed" min="0" max="2" step="1" value="1">
     </div>
 
     <div class="card">
@@ -268,7 +279,18 @@ async function connect() {
 }
 function writeChunk(c) { return chIn.writeValueWithoutResponse ? chIn.writeValueWithoutResponse(c) : chIn.writeValue(c); }
 function nextSeq() { const key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv; let s = parseInt(localStorage.getItem(key) || '', 10); if (!Number.isFinite(s)) s = Math.floor(Date.now() / 1000) % 0x800000; localStorage.setItem(key, String((s + 1) & 0xffffff)); return s & 0xffffff; }
-async function sendAccess(dst, access) { const seq = nextSeq(); const lower = MESH.encryptAccess(APP, iv, seq, CFG.source, dst, access, false); const pdu = MESH.encryptNetwork(NET, iv, { ctl: 0, ttl: 5, seq, src: CFG.source, dst, lower }); for (const chunk of MESH.fragmentProxy(0, pdu)) { await writeChunk(chunk); } }
+let _sendChain = Promise.resolve();
+function sendAccess(dst, access) {
+  const run = async () => {
+    const seq = nextSeq();
+    const lower = MESH.encryptAccess(APP, iv, seq, CFG.source, dst, access, false);
+    const pdu = MESH.encryptNetwork(NET, iv, { ctl: 0, ttl: 5, seq, src: CFG.source, dst, lower });
+    for (const chunk of MESH.fragmentProxy(0, pdu)) { await writeChunk(chunk); }
+  };
+  const p = _sendChain.then(run, run);  // serialize: never interleave fragments
+  _sendChain = p.catch(() => {});
+  return p;
+}
 function resolve(target) { if (target === 'all') return Object.values(CFG.groups); if (CFG.groups[target] != null) return [CFG.groups[target]]; const l = CFG.lamps.find(x => x[0] === target); if (l) return [l[1]]; return []; }
 let target = 'all';
 async function command(accesses) {
@@ -344,7 +366,38 @@ $('#on').addEventListener('click', () => { buzz(); command([MESH.cmd.power(true)
 $('#off').addEventListener('click', () => { buzz(); command([MESH.cmd.power(false)]); });
 
 /* ===== Tabs ===== */
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); const c = t.dataset.tab; $('#pane-originals').classList.toggle('hide', c !== 'originals'); $('#pane-color').classList.toggle('hide', c !== 'color'); $('#pane-white').classList.toggle('hide', c !== 'white'); });
+const PANES = ['originals', 'color', 'white', 'party'];
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); const c = t.dataset.tab; PANES.forEach(p => $('#pane-' + p).classList.toggle('hide', c !== p)); });
+
+/* ===== Party mode (rainbow chase across lamps) ===== */
+let partyOn = false;
+const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave: pause between sweeps (ms)
+async function partyLoop() {
+  const lamps = CFG.lamps.map(l => l[1]);
+  try {
+    for (const d of lamps) { if (!partyOn) break; await sendAccess(d, MESH.cmd.colorMode(true)); await sleep(45); }
+    let phase = 0;
+    while (partyOn) {
+      for (let i = 0; i < lamps.length; i++) {
+        if (!partyOn) break;
+        const [r, g, b] = hsv2rgb((phase * 48 + i * 60) % 360, 1, 1);
+        await sendAccess(lamps[i], MESH.cmd.rgb(r, g, b));
+        await sleep(60);
+      }
+      phase++;
+      if (dev && dev.gatt && !dev.gatt.connected) { partyOn = false; break; }
+      await sleep(SPEED_GAP[+$('#speed').value] || 260);
+    }
+  } catch (e) { setStatus('Party stopped: ' + (e.message || e), 'err'); }
+  partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger');
+}
+$('#party').addEventListener('click', () => {
+  if (!connected) { setStatus('Connect Bluetooth first.', 'err'); return; }
+  buzz();
+  if (partyOn) { partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger'); setStatus('Party stopped.', 'ok'); return; }
+  partyOn = true; $('#party').textContent = 'Stop Party ⏹'; $('#party').classList.add('danger'); setStatus('Party on 🎉', 'ok'); partyLoop();
+});
+$('#speed').addEventListener('input', e => $('#spv').textContent = ['Chill', 'Groovy', 'Rave'][+e.target.value]);
 
 /* ===== Targets ===== */
 const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
