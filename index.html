@@ -277,7 +277,11 @@ async function connect() {
     setConn(true, 'Connected'); setStatus('Ready — pick a color.', 'ok');
   } catch (err) { setStatus('Could not connect: ' + (err.message || err), 'err'); }
 }
-function writeChunk(c) { return chIn.writeValueWithoutResponse ? chIn.writeValueWithoutResponse(c) : chIn.writeValue(c); }
+async function writeChunk(c) {
+  try { if (chIn.writeValueWithoutResponse) { await chIn.writeValueWithoutResponse(c); return; } }
+  catch (e) { /* fast write not available right now — fall back to reliable write */ }
+  await chIn.writeValue(c);
+}
 function nextSeq() { const key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv; let s = parseInt(localStorage.getItem(key) || '', 10); if (!Number.isFinite(s)) s = Math.floor(Date.now() / 1000) % 0x800000; localStorage.setItem(key, String((s + 1) & 0xffffff)); return s & 0xffffff; }
 let _sendChain = Promise.resolve();
 function sendAccess(dst, access) {
@@ -372,23 +376,23 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.quer
 /* ===== Party mode (rainbow chase across lamps) ===== */
 let partyOn = false;
 const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave: pause between sweeps (ms)
+async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
 async function partyLoop() {
   const lamps = CFG.lamps.map(l => l[1]);
-  try {
-    for (const d of lamps) { if (!partyOn) break; await sendAccess(d, MESH.cmd.colorMode(true)); await sleep(45); }
-    let phase = 0;
-    while (partyOn) {
-      for (let i = 0; i < lamps.length; i++) {
-        if (!partyOn) break;
-        const [r, g, b] = hsv2rgb((phase * 48 + i * 60) % 360, 1, 1);
-        await sendAccess(lamps[i], MESH.cmd.rgb(r, g, b));
-        await sleep(60);
-      }
-      phase++;
-      if (dev && dev.gatt && !dev.gatt.connected) { partyOn = false; break; }
-      await sleep(SPEED_GAP[+$('#speed').value] || 260);
+  let phase = 0, ok = 0;
+  for (const d of lamps) { if (!partyOn) break; await safeSend(d, MESH.cmd.colorMode(true)); await sleep(70); }
+  while (partyOn) {
+    for (let i = 0; i < lamps.length; i++) {
+      if (!partyOn) break;
+      const [r, g, b] = hsv2rgb((phase * 48 + i * 60) % 360, 1, 1);
+      if (await safeSend(lamps[i], MESH.cmd.rgb(r, g, b))) ok++;
+      await sleep(70);
     }
-  } catch (e) { setStatus('Party stopped: ' + (e.message || e), 'err'); }
+    setStatus('Party on 🎉  (' + ok + ' colors sent)', 'ok');
+    phase++;
+    if (dev && dev.gatt && !dev.gatt.connected) { partyOn = false; setStatus('Party stopped — Bluetooth dropped.', 'err'); break; }
+    await sleep(SPEED_GAP[+$('#speed').value] || 260);
+  }
   partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger');
 }
 $('#party').addEventListener('click', () => {
