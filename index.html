@@ -334,6 +334,7 @@ const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
 /* ===== One-time key setup ===== */
 function extractKeys(text) { const m = (text || '').match(/[0-9a-fA-F]{32}/g); return (m && m.length >= 2) ? { net: m[0].toLowerCase(), app: m[1].toLowerCase() } : null; }
 $('#savekeys').addEventListener('click', () => { const k = extractKeys($('#keyin').value); if (!k) { setStatus('That didn’t contain two 32-character keys — paste the whole setup link.', 'err'); return; } localStorage.setItem('oasis_net', k.net); localStorage.setItem('oasis_app', k.app); location.reload(); });
+$('#connect').addEventListener('click', connect);
 if (!KEYS) { $('#setupcard').classList.remove('hide'); $('#connect').textContent = 'Finish setup first'; setStatus('First time on this device? Do the one-time setup below.'); }
 if (!navigator.bluetooth) $('#hint').textContent = 'On iPhone, open this page in the free Bluefy app (Safari/Chrome can’t do Bluetooth). On Android, use Chrome.';
 
