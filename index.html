@@ -378,15 +378,18 @@ let partyOn = false;
 const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave: pause between sweeps (ms)
 async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
 async function partyLoop() {
-  const lamps = CFG.lamps.map(l => l[1]);
+  // Use the ROOM GROUPS — the same addressing your normal colors use (proven to work).
+  const zones = Object.values(CFG.groups);
+  if (!zones.length) zones.push(...CFG.lamps.map(l => l[1]));
   let phase = 0, ok = 0;
-  for (const d of lamps) { if (!partyOn) break; await safeSend(d, MESH.cmd.colorMode(true)); await sleep(70); }
+  for (const z of zones) { if (!partyOn) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
   while (partyOn) {
-    for (let i = 0; i < lamps.length; i++) {
+    for (let i = 0; i < zones.length; i++) {
       if (!partyOn) break;
-      const [r, g, b] = hsv2rgb((phase * 48 + i * 60) % 360, 1, 1);
-      if (await safeSend(lamps[i], MESH.cmd.rgb(r, g, b))) ok++;
-      await sleep(70);
+      // each room sits on a different part of the rainbow, and the whole thing rotates
+      const [r, g, b] = hsv2rgb((phase * 36 + i * (360 / Math.max(2, zones.length))) % 360, 1, 1);
+      if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++;
+      await sleep(80);
     }
     setStatus('Party on 🎉  (' + ok + ' colors sent)', 'ok');
     phase++;
