@@ -297,8 +297,27 @@ drag(sv, svFromEvent); drag(huebar, hueFromEvent);
 function setPickerRGB(r, g, b) { const [h, s, v] = rgb2hsv(r, g, b); hue = h; sat = s; val = v; $('#hueh').style.left = (hue / 360 * 100) + '%'; $('#svh').style.left = (sat * 100) + '%'; $('#svh').style.top = ((1 - val) * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; paintPreview(); }
 
 /* ===== OASIS Originals (matched to the app's scene palette) ===== */
-const ORIGINALS = [['Bright', [255, 249, 238]], ['Neutral', [255, 239, 216]], ['Soft', [255, 220, 171]], ['Amber', [255, 182, 93]], ['Candle', [255, 166, 60]], ['Dusk', [255, 135, 63]], ['Maui', [255, 70, 1]], ['Pure Red', [255, 0, 0]]];
-(function buildOriginals() { const box = $('#originals'); ORIGINALS.forEach(([name, [r, g, b]]) => { const el = document.createElement('div'); el.className = 'orig'; el.innerHTML = `<div class="disc" style="background:rgb(${r},${g},${b})"></div><div class="nm">${name}</div>`; el.onclick = () => { buzz(); document.querySelectorAll('.orig').forEach(x => x.classList.remove('sel')); el.classList.add('sel'); command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]); }; box.appendChild(el); }); })();
+// {k: kelvin} => true white mode; {rgb:[r,g,b]} => color mode. Values dialed on the lamp.
+const ORIGINALS = [
+  ['Bright', { k: 6500 }], ['Neutral', { k: 3450 }], ['Soft', { k: 2850 }],
+  ['Amber', { rgb: [255, 174, 29] }], ['Candle', { rgb: [229, 131, 19] }], ['Dusk', { rgb: [203, 88, 8] }],
+  ['Maui', { rgb: [255, 70, 1] }], ['Pure Red', { rgb: [255, 0, 0] }],
+];
+(function buildOriginals() {
+  const box = $('#originals');
+  ORIGINALS.forEach(([name, spec]) => {
+    const [r, g, b] = spec.rgb || kelvinToRGB(spec.k);
+    const el = document.createElement('div'); el.className = 'orig';
+    el.innerHTML = `<div class="disc" style="background:rgb(${r},${g},${b})"></div><div class="nm">${name}</div>`;
+    el.onclick = () => {
+      buzz();
+      document.querySelectorAll('.orig').forEach(x => x.classList.remove('sel')); el.classList.add('sel');
+      if (spec.k) command([MESH.cmd.colorMode(false), MESH.cmd.brightnessTemp(100, spec.k, Date.now() >>> 0)]);
+      else command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]);
+    };
+    box.appendChild(el);
+  });
+})();
 
 /* ===== Full-spectrum vivid presets ===== */
 const VIVID = [[255, 0, 0], [255, 90, 0], [255, 220, 0], [0, 255, 0], [0, 255, 150], [0, 255, 255], [0, 90, 255], [0, 0, 255], [75, 0, 255], [160, 0, 255], [255, 0, 200], [255, 80, 160], [255, 255, 255]];
