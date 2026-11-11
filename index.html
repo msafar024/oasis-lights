@@ -385,6 +385,7 @@ const PALETTES = {
 const EFFECTS = [['rainbow', '🌈 Rainbow'], ['fade', '✨ Smooth'], ['strobe', '⚡ Strobe'], ['cop', '🚨 Cop'], ['storm', '🌩️ Lightning'], ['sunset', '🌅 Sunset'], ['ocean', '🌊 Ocean'], ['neon', '💜 Neon']];
 const STORM_QUIET = [2800, 1500, 600];  // avg ms between strikes by speed
 const rgbCmd = (c) => MESH.cmd.rgb(c[0], c[1], c[2]);
+async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
 
 async function partyLoop() {
   const zones = Object.values(CFG.groups);
