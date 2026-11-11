@@ -256,9 +256,20 @@
 })(window);
 
 /* ===== Config (your mesh) — NO SECRET KEYS in this file ===== */
+// Each device gets its OWN unique mesh sender address so multiple phones never
+// collide on sequence numbers (which caused the "someone else used it, now I'm
+// locked out" bug). Independent senders => everyone can control; last command wins.
+function deviceSource() {
+  let s = parseInt(localStorage.getItem('oasis_src') || '', 10);
+  if (!Number.isInteger(s) || s < 0x1000 || s > 0x7ffe) {
+    s = 0x1000 + Math.floor(Math.random() * (0x7ffe - 0x1000)); // random, avoids Mac's 0x7fff
+    localStorage.setItem('oasis_src', String(s));
+  }
+  return s;
+}
 const CFG = {
   meshUUID: '40B97412-0990-4717-8274-3C1F47A73CF5',
-  source: 0x7ffe,
+  source: deviceSource(),
   groups: { livingRoomID: 0xE9E6, bedroomID: 0xD77A },
   lamps: [['OASIS_9796f4', 0x4967], ['OASIS_7b37c4', 0x5BC7], ['OASIS_99bc80', 0x778C], ['OASIS_577000', 0x7105], ['OASIS_94378c', 0x0102], ['OASIS_af8528', 0x0103]],
 };
@@ -316,7 +327,11 @@ async function connect() {
     $('#panel').classList.remove('gate');
     $('#connect').classList.add('connected'); $('#connect').textContent = 'Bluetooth connected ✓';
     setConn(true, 'Connected'); setStatus('Ready — pick a color.', 'ok');
-  } catch (err) { setStatus('Could not connect: ' + (err.message || err), 'err'); }
+  } catch (err) {
+    const m = (err && err.message) || String(err);
+    if (/cancel|chooser|No device selected|not found/i.test(m)) setStatus('No lamp picked — tap Connect and choose an OASIS_… lamp.', 'err');
+    else setStatus('Couldn’t connect — that lamp may already be in use by another phone. Tap Connect again and pick a different OASIS_… lamp.', 'err');
+  }
 }
 async function writeChunk(c) {
   try { if (chIn.writeValueWithoutResponse) { await chIn.writeValueWithoutResponse(c); return; } }
