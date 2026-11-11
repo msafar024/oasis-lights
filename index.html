@@ -4,212 +4,490 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0b0d12">
+<meta name="apple-mobile-web-app-title" content="Oasis">
+<meta name="theme-color" content="#0c0b0a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230c0b0a'/%3E%3Ccircle cx='32' cy='32' r='16' fill='%23ffb63d'/%3E%3Ccircle cx='26' cy='26' r='6' fill='%23ffe3ae'/%3E%3C/svg%3E">
 <title>Oasis</title>
 <style>
+  /* Design language: a dark, warm room. The interface is lit by the lamps —
+     the orb, page bloom and accent all take the colour you last sent.
+     Layout: one thumb-reach column on phones (stage on top, tabs docked at the
+     bottom); stage + controls side by side from 920px. */
   :root{
-    --bg:#060810; --fg:#f3f6fc; --muted:#98a2b8; --faint:#6b7488;
-    --accent:#6ea0ff; --accent2:#9b7bff; --ok:#4ade80; --err:#fb7185;
-    --card:rgba(255,255,255,.055); --card-strong:rgba(255,255,255,.09);
-    --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.07);
-    --r:24px; --safe-t:env(safe-area-inset-top); --safe-b:env(safe-area-inset-bottom);
-    --shadow:0 18px 50px -24px rgba(0,0,0,.85);
+    color-scheme:dark;
+    --bg:#0c0b0a; --surface:#161412; --surface-2:#1f1c19; --surface-3:#2b2723;
+    --line:rgba(255,240,220,.08); --line-2:rgba(255,240,220,.16);
+    --ink:#f6f1e9; --ink-2:#bdb4a7; --ink-3:#8f8679;
+    --ok:#7ddc9a; --err:#ff9382;
+    --glow:255 174 29; --accent:#ffc66b; --accent-ink:#1a1206; --lvl:1;
+    --r-lg:26px; --r-md:18px; --r-sm:12px;
+    --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+    --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
+    --display:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --text:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+    --ease:cubic-bezier(.2,.8,.2,1);
+    --nav-h:62px;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
-  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--fg);
-    font:16px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
-    -webkit-user-select:none;user-select:none;overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
-  body{position:relative;min-height:100vh;isolation:isolate}
-  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
-    background:
-      radial-gradient(70% 45% at 12% -8%, rgba(110,160,255,.22), transparent 60%),
-      radial-gradient(60% 40% at 96% 4%, rgba(155,123,255,.18), transparent 60%),
-      radial-gradient(95% 55% at 50% 112%, rgba(90,120,255,.10), transparent 60%),
-      var(--bg);}
+  html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+    font:16px/1.45 var(--text);-webkit-user-select:none;user-select:none;
+    overscroll-behavior-y:none;-webkit-font-smoothing:antialiased}
+  body{position:relative;min-height:100vh;min-height:100dvh;isolation:isolate;overflow-x:hidden}
+  button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0}
+  input{font:inherit;color:inherit}
+  input[type=text]{-webkit-user-select:text;user-select:text}
+  :focus{outline:none}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .hide{display:none!important}
+  .ic{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .ic.fill{fill:currentColor;stroke:none}
 
-  .topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
-    padding:calc(var(--safe-t) + 14px) 20px 14px;
-    backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);
-    background:linear-gradient(to bottom, rgba(6,8,16,.82), rgba(6,8,16,.32));
-    border-bottom:1px solid var(--line-2)}
-  .brand{font-size:21px;font-weight:800;letter-spacing:.3px;color:#fff;line-height:1}
-  .brand small{display:block;font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
-    color:var(--faint);margin-top:3px}
-  .conn{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);font-weight:600;
-    padding:7px 13px;border-radius:999px;background:var(--card);border:1px solid var(--line-2);
-    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-  .dot{width:9px;height:9px;border-radius:50%;background:#58627c;transition:.3s}
-  .dot.on{background:var(--ok);box-shadow:0 0 0 0 rgba(74,222,128,.5);animation:pulse 2.2s infinite}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(74,222,128,.5)}70%{box-shadow:0 0 0 8px rgba(74,222,128,0)}100%{box-shadow:0 0 0 0 rgba(74,222,128,0)}}
+  /* light spilling into the room */
+  .bloom{position:fixed;z-index:-1;pointer-events:none;left:-30%;right:-30%;top:-22vh;height:78vh;
+    color:rgb(var(--glow));background:radial-gradient(closest-side,currentColor,transparent);
+    opacity:calc(.04 + .2*var(--lvl));transition:color .6s,opacity .5s}
 
-  main{max-width:620px;margin:0 auto;padding:18px 16px calc(var(--safe-b) + 40px)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;
-    box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.06);
-    backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2);
-    animation:rise .45s ease both}
-  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-  .label{font-size:11.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);margin-bottom:14px;font-weight:700}
-  .note{color:var(--muted);font-size:12.5px;line-height:1.55}
-  .note code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:5px;font-size:11.5px}
+  /* ---------- header ---------- */
+  .top{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:10px;
+    padding:calc(var(--safe-t) + 10px) max(16px,var(--safe-r)) 10px max(16px,var(--safe-l));
+    background:linear-gradient(to bottom,rgba(12,11,10,.92),rgba(12,11,10,.72));
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  .brand{display:flex;align-items:center;gap:10px;margin-right:auto;font:700 21px/1 var(--display);letter-spacing:.01em}
+  .mark{width:22px;height:22px;border-radius:50%;color:rgb(var(--glow));transition:color .6s;
+    background:radial-gradient(circle at 34% 28%,rgba(255,255,255,.8),rgba(255,255,255,0) 50%),currentColor;
+    box-shadow:0 0 14px -2px currentColor}
+  .conn{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 14px;border-radius:999px;
+    font-size:13px;font-weight:600;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line)}
+  .dot{width:8px;height:8px;border-radius:50%;background:#6a6258;transition:background .3s}
+  .dot.on{background:var(--ok);animation:pulse 2.4s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(125,220,154,.5)}70%{box-shadow:0 0 0 7px rgba(125,220,154,0)}100%{box-shadow:0 0 0 0 rgba(125,220,154,0)}}
+  .iconbtn{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);
+    background:var(--surface-2);border:1px solid var(--line);transition:transform .15s var(--ease)}
+  .iconbtn:active{transform:scale(.92)}
 
-  .connect{position:relative;width:100%;min-height:60px;border:none;border-radius:18px;
-    background:linear-gradient(180deg,#6ea0ff,#4577f5);color:#fff;font-size:17px;font-weight:700;cursor:pointer;
-    box-shadow:0 14px 34px -14px rgba(99,140,255,.9), inset 0 1px 0 rgba(255,255,255,.4);
-    letter-spacing:.2px;transition:transform .12s, box-shadow .2s, min-height .25s}
-  .connect:active{transform:translateY(1px) scale(.995)}
-  .connect.connected{background:linear-gradient(180deg,rgba(74,222,128,.16),rgba(74,222,128,.07));
-    color:var(--ok);border:1px solid rgba(74,222,128,.35);box-shadow:none;min-height:50px;font-size:15px}
-  .status{font-size:12.5px;text-align:center;min-height:16px;margin-top:12px;color:var(--muted);font-weight:500}
+  /* ---------- layout ---------- */
+  .app{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px;
+    padding:6px max(16px,var(--safe-r)) calc(var(--nav-h) + var(--safe-b) + 28px) max(16px,var(--safe-l))}
+  .col{display:flex;flex-direction:column;gap:14px;min-width:0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px}
+  .label{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+  .head{display:flex;align-items:center;justify-content:space-between;min-height:24px;margin-bottom:14px}
+  .head + .head{margin-top:0}
+  .link{font-size:13px;font-weight:600;color:var(--accent);padding:6px 2px;margin:-6px 0}
+  .note{color:var(--ink-3);font-size:13px;line-height:1.5;margin:0}
+  .note code{font:12px var(--mono);background:var(--surface-3);padding:1px 5px;border-radius:5px;color:var(--ink-2)}
+  .gated{transition:opacity .3s}
+  body.locked .gated{opacity:.32;pointer-events:none}
 
-  .seg{display:flex;gap:9px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:2px 2px 4px;margin:0 -2px}
-  .seg::-webkit-scrollbar{display:none}
-  .chip{flex:0 0 auto;padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:var(--card-strong);
-    color:var(--fg);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;transition:.18s;letter-spacing:.1px}
+  /* ---------- chips ---------- */
+  .chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+    margin:0 calc(-1*max(16px,var(--safe-r))) 0 calc(-1*max(16px,var(--safe-l)));
+    padding:2px max(16px,var(--safe-r)) 2px max(16px,var(--safe-l))}
+  .chips::-webkit-scrollbar{display:none}
+  .chips.inset{margin:0 -18px;padding:2px 18px}
+  .chip{flex:none;display:flex;align-items:center;gap:7px;min-height:42px;padding:0 15px;border-radius:999px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:14px;font-weight:600;
+    white-space:nowrap;transition:transform .15s var(--ease),background .2s,color .2s}
+  .chip .ic{width:17px;height:17px}
   .chip:active{transform:scale(.95)}
-  .chip.on{background:linear-gradient(180deg,var(--accent),var(--accent2));border-color:transparent;color:#fff;
-    box-shadow:0 8px 20px -8px rgba(123,140,255,.8)}
+  .chip.on{background:var(--accent);border-color:transparent;color:var(--accent-ink)}
+  .chip-sep{flex:none;width:1px;margin:9px 3px;background:var(--line-2)}
 
-  .tabbar{display:flex;gap:4px;background:var(--card);padding:5px;border-radius:16px;margin-bottom:16px;border:1px solid var(--line-2);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
-  .tab{flex:1;text-align:center;padding:12px 4px;border-radius:12px;background:transparent;border:none;color:var(--muted);
-    font-size:14px;font-weight:700;cursor:pointer;transition:.2s;letter-spacing:.2px}
-  .tab.on{background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.06));color:#fff;
-    box-shadow:0 4px 14px -6px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.16)}
-  .pane.hide,.hide{display:none}
+  /* ---------- stage ---------- */
+  .stage{position:relative;padding:20px 18px 18px;border-radius:var(--r-lg);background:
+    linear-gradient(180deg,rgba(255,240,220,.05),rgba(255,240,220,.015));border:1px solid var(--line);overflow:hidden}
+  .stage-top{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 0}
+  .orb{position:relative;width:128px;height:128px;border-radius:50%;flex:none;color:rgb(var(--glow));transition:color .5s}
+  .orb::before{content:"";position:absolute;inset:-38px;border-radius:50%;
+    background:radial-gradient(closest-side,currentColor,transparent);
+    opacity:calc(.1 + .45*var(--lvl));transition:opacity .5s}
+  .orb-core{position:absolute;inset:0;border-radius:50%;overflow:hidden;
+    background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.78),rgba(255,255,255,0) 46%),
+      radial-gradient(circle,rgba(0,0,0,0) 50%,rgba(0,0,0,.3)),currentColor;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),0 14px 44px -10px currentColor;
+    filter:brightness(calc(.5 + .5*var(--lvl)));transition:filter .4s}
+  .orb-core::after{content:"";position:absolute;inset:0;border-radius:50%;opacity:0;transition:opacity .4s;
+    background:var(--party,none)}
+  body.party .orb-core::after{opacity:1;animation:spin 7s linear infinite}
+  body.party .orb::before{animation:breathe 2.4s ease-in-out infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes breathe{50%{opacity:.25}}
+  body.is-off .orb{color:#39342e}
+  body.is-off .orb-core{filter:none;background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.16),rgba(255,255,255,0) 46%),currentColor;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .pwr{display:flex;flex-direction:column;align-items:center;gap:7px;width:64px;color:var(--ink-3);
+    font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .pwr-ic{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);
+    background:var(--surface-2);border:1px solid var(--line-2);transition:transform .15s var(--ease),background .25s,color .25s}
+  .pwr:active .pwr-ic{transform:scale(.92)}
+  .pwr.sel{color:var(--ink)}
+  #on.sel .pwr-ic{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  #off.sel .pwr-ic{background:var(--ink);color:var(--bg);border-color:transparent}
+  .look{text-align:center;margin-top:22px;position:relative}
+  .look h1{margin:0;font:700 26px/1.15 var(--display);letter-spacing:-.01em;text-wrap:balance}
+  .look p{margin:5px 0 0;color:var(--ink-2);font-size:14px;font-variant-numeric:tabular-nums}
+  .status{min-height:18px;margin:8px 0 0;text-align:center;font-size:13px;font-weight:500;color:var(--ink-3);position:relative}
+  .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+  .cta{display:none;margin-top:14px;position:relative}
+  body.locked .cta{display:block}
+  body.locked .ctl{display:none}
+  .cta .note{text-align:center;margin-top:10px}
+  .cta .note:empty{display:none}
+  .ctl{margin-top:12px;position:relative}
+  .srow{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .val{font:700 15px var(--display);font-variant-numeric:tabular-nums;color:var(--ink)}
+  .actions{display:grid;gap:10px;margin-top:14px}
+  .ghost{display:flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 10px;border-radius:15px;
+    background:var(--surface-2);border:1px solid var(--line);color:var(--ink-2);font-size:14px;font-weight:600;
+    font-variant-numeric:tabular-nums;transition:transform .15s var(--ease),color .2s}
+  .ghost .ic{width:18px;height:18px}
+  .ghost:active{transform:scale(.97)}
+  .ghost.active{color:var(--accent);border-color:var(--line-2)}
 
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px 10px}
-  .orig{display:flex;flex-direction:column;align-items:center;gap:9px;cursor:pointer}
-  .orig .disc{width:60px;height:60px;border-radius:50%;border:1px solid rgba(255,255,255,.18);
-    box-shadow:0 8px 18px -8px rgba(0,0,0,.9), inset 0 2px 7px rgba(255,255,255,.28);transition:transform .14s, box-shadow .2s}
-  .orig:active .disc{transform:scale(.9)}
-  .orig.sel .disc{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--accent),0 8px 22px -6px rgba(110,160,255,.7)}
-  .orig .nm{font-size:11.5px;color:var(--muted);text-align:center;line-height:1.15;font-weight:500}
+  /* ---------- buttons ---------- */
+  .btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:54px;padding:0 18px;
+    border-radius:var(--r-md);background:var(--surface-2);border:1px solid var(--line-2);color:var(--ink);
+    font:700 16px var(--display);letter-spacing:.01em;transition:transform .15s var(--ease),background .25s,color .25s,opacity .2s}
+  .btn:active{transform:scale(.98)}
+  .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent}
+  .btn.big{min-height:58px;font-size:17px}
+  .btn.danger{background:transparent;color:var(--err);border-color:rgba(255,147,130,.5)}
+  .btn.quiet{min-height:48px;font-size:15px;font-weight:600}
+  .btn[disabled]{opacity:.6;pointer-events:none}
+  .spin{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:spin .7s linear infinite;display:none}
+  .btn.busy .spin{display:block} .btn.busy .ic{display:none}
 
-  #sv{position:relative;width:100%;height:220px;border-radius:18px;cursor:crosshair;touch-action:none;
-    box-shadow:inset 0 0 0 1px rgba(255,255,255,.08), var(--shadow);
-    background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(240 100% 50%))}
-  #svh{position:absolute;width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 3px 10px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none}
-  .hue{position:relative;height:28px;margin-top:18px;border-radius:999px;touch-action:none;cursor:pointer;
+  /* ---------- sliders ---------- */
+  input[type=range]{--p:.5;--tw:28px;width:100%;margin:0;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;display:block;touch-action:pan-y}
+  .thick{--tw:30px;height:52px}
+  .thick::-webkit-slider-runnable-track{height:52px;border-radius:17px;
+    background:linear-gradient(to right,var(--accent) 0,var(--accent) calc(var(--tw) + (100% - var(--tw))*var(--p)),var(--surface-3) 0);
+    box-shadow:inset 0 0 0 1px var(--line)}
+  .thick::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:52px;border:0;border-radius:0;
+    background:linear-gradient(var(--accent-ink),var(--accent-ink)) calc(100% - 9px) 50%/4px 20px no-repeat;opacity:.4}
+  .thick::-moz-range-track{height:52px;border-radius:17px;background:var(--surface-3)}
+  .thick::-moz-range-progress{height:52px;border-radius:17px 0 0 17px;background:var(--accent)}
+  .thick::-moz-range-thumb{width:4px;height:20px;border:0;border-radius:2px;background:var(--accent-ink);opacity:.4}
+  .slim{height:44px;--track:var(--surface-3)}
+  .slim::-webkit-slider-runnable-track{height:10px;border-radius:999px;background:var(--track);box-shadow:inset 0 0 0 1px var(--line)}
+  .slim::-webkit-slider-thumb{-webkit-appearance:none;width:28px;height:28px;border-radius:50%;background:#fff;border:0;margin-top:-9px;
+    box-shadow:0 2px 10px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.08);transition:transform .12s}
+  .slim:active::-webkit-slider-thumb{transform:scale(1.12)}
+  .slim::-moz-range-track{height:10px;border-radius:999px;background:var(--track)}
+  .slim::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#fff;border:0;box-shadow:0 2px 10px rgba(0,0,0,.55)}
+  #kelvin{--track:linear-gradient(to right,#ff8a3c,#ffc98a 30%,#fff3e2 62%,#dbe8ff)}
+  #speed,#msens{--track:linear-gradient(to right,var(--accent) 0,var(--accent) calc(var(--tw)/2 + (100% - var(--tw))*var(--p)),var(--surface-3) 0)}
+  .ends{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--ink-3);margin-top:-2px}
+
+  /* ---------- tabs ---------- */
+  .tabs{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;justify-content:space-around;
+    padding:6px max(8px,var(--safe-r)) calc(var(--safe-b) + 6px) max(8px,var(--safe-l));
+    background:rgba(14,13,12,.88);backdrop-filter:blur(20px) saturate(1.2);-webkit-backdrop-filter:blur(20px) saturate(1.2);
+    border-top:1px solid var(--line)}
+  .tab{flex:1;max-width:104px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:50px;
+    color:var(--ink-3);font-size:11.5px;font-weight:600;letter-spacing:.02em;transition:color .2s}
+  .tab-ic{width:52px;height:30px;border-radius:999px;display:grid;place-items:center;transition:background .25s,color .25s}
+  .tab.on{color:var(--ink)}
+  .tab.on .tab-ic{background:var(--accent);color:var(--accent-ink)}
+  .pane{animation:rise .28s var(--ease) both}
+  @keyframes rise{from{transform:translateY(8px)}to{transform:none}}
+
+  /* ---------- scenes ---------- */
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px 8px}
+  .scene{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:2px 0;min-width:0}
+  .disc{width:58px;max-width:100%;aspect-ratio:1;border-radius:50%;
+    background:radial-gradient(circle at 34% 26%,rgba(255,255,255,.55),rgba(255,255,255,0) 48%),
+      radial-gradient(circle,rgba(0,0,0,0) 52%,rgba(0,0,0,.28)),var(--c);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),0 12px 22px -12px var(--c);
+    transition:transform .16s var(--ease),box-shadow .25s}
+  .scene:active .disc{transform:scale(.9)}
+  .scene.sel .disc{box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--accent),0 12px 26px -8px var(--c)}
+  .scene .nm{font-size:12px;font-weight:500;color:var(--ink-2);text-align:center;line-height:1.2;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .scene.sel .nm{color:var(--ink);font-weight:600}
+  .scene .rm{display:none;position:absolute;top:-4px;right:calc(50% - 36px);width:24px;height:24px;border-radius:50%;
+    background:var(--ink);color:var(--bg);place-items:center}
+  .scene .rm .ic{width:13px;height:13px;stroke-width:2.6}
+  .editing .scene .rm{display:grid}
+  .editing .scene .disc{animation:wob .32s ease-in-out infinite alternate}
+  @keyframes wob{from{transform:rotate(-2.5deg)}to{transform:rotate(2.5deg)}}
+  .empty{border:1px dashed var(--line-2);border-radius:var(--r-md);padding:16px;text-align:center}
+  .divider{height:1px;background:var(--line);margin:20px 0 18px}
+
+  /* ---------- colour ---------- */
+  #sv{position:relative;width:100%;height:200px;border-radius:var(--r-md);cursor:crosshair;touch-action:none;
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);
+    background:linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(240 100% 50%))}
+  #svh,#hueh{position:absolute;border-radius:50%;border:3px solid #fff;pointer-events:none;transform:translate(-50%,-50%);
+    box-shadow:0 0 0 1px rgba(0,0,0,.45),0 3px 10px rgba(0,0,0,.6)}
+  #svh{width:26px;height:26px}
+  .hue{position:relative;height:28px;margin:4px 14px 16px;border-radius:999px;touch-action:none;cursor:pointer;
     background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00)}
-  #hueh{position:absolute;top:50%;width:28px;height:28px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.5),0 3px 10px rgba(0,0,0,.6);transform:translate(-50%,-50%);pointer-events:none}
-  .preview{display:flex;align-items:center;gap:14px;margin-top:18px}
-  .swatch{width:54px;height:54px;border-radius:16px;border:1px solid var(--line);box-shadow:0 8px 18px -8px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.2)}
-  .hex{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  #hex{color:var(--fg);font-size:16px;font-weight:600;letter-spacing:.5px}
-  .vivid{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
-  .ps{width:44px;height:44px;border-radius:13px;border:1px solid rgba(255,255,255,.16);cursor:pointer;
-    box-shadow:0 6px 14px -8px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.25);transition:transform .12s}
-  .ps:active{transform:scale(.9)}
+  .hue::before{content:"";position:absolute;inset:0 -14px;border-radius:999px;z-index:-1;
+    background:linear-gradient(to right,#f00 14px,#ff0,#0f0,#0ff,#00f,#f0f,#f00 calc(100% - 14px));box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .hue{isolation:isolate}
+  #hueh{top:50%;width:30px;height:30px}
+  .preview{display:flex;align-items:center;gap:12px;margin-top:18px}
+  .swatch{width:48px;height:48px;border-radius:14px;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+  .hexwrap{flex:1;min-width:0;display:flex;align-items:center;gap:2px;height:48px;padding:0 14px;border-radius:14px;
+    background:var(--surface-2);border:1px solid var(--line);font:600 16px var(--mono);color:var(--ink-3)}
+  .hexwrap:focus-within{border-color:var(--accent)}
+  #hex{flex:1;min-width:0;border:0;background:none;outline:none;font:600 16px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink)}
+  #rgbtxt{font:12px var(--mono);color:var(--ink-3);white-space:nowrap}
+  .dots{display:grid;grid-template-columns:repeat(7,1fr);gap:9px}
+  .ps{width:100%;aspect-ratio:1;border-radius:50%;background:var(--c);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);transition:transform .14s var(--ease)}
+  .ps:active{transform:scale(.88)}
+  .sub{margin:18px 0 10px}
 
-  .srow{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .srow .end{font-size:11.5px;color:var(--faint);font-weight:600}
-  input[type=range]{width:100%;height:36px;margin:0;-webkit-appearance:none;background:transparent;cursor:pointer}
-  input[type=range]::-webkit-slider-runnable-track{height:14px;border-radius:999px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:30px;height:30px;border-radius:50%;background:#fff;
-    border:none;box-shadow:0 3px 10px rgba(0,0,0,.55), inset 0 0 0 1px rgba(0,0,0,.08);margin-top:-8px;transition:transform .1s}
-  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
-  #bright::-webkit-slider-runnable-track{background:linear-gradient(to right,#232a3a,#e8edf7)}
-  #kelvin::-webkit-slider-runnable-track{background:linear-gradient(to right,#ff8a3c,#ffd9a0,#fff,#d4e4ff)}
-  #wbright::-webkit-slider-runnable-track{background:linear-gradient(to right,#232a3a,#ffe9c7)}
-  #speed::-webkit-slider-runnable-track{background:linear-gradient(to right,#232a3a,#6ea0ff,#9b7bff)}
-  .val{color:var(--fg);font-variant-numeric:tabular-nums;font-weight:700;font-size:15px}
-  .wprev{display:flex;align-items:center;gap:13px;margin:6px 0 18px}
-  .wprev .swatch{width:46px;height:46px}
+  /* ---------- white ---------- */
+  .wprev{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .wprev .swatch{border-radius:50%}
+  .wprev .big{font:700 30px/1 var(--display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .wprev .note{margin-top:4px;color:var(--ink-2)}
 
-  .row{display:flex;gap:12px}.row>*{flex:1}
-  .btn{min-height:54px;border-radius:16px;border:1px solid var(--line);background:var(--card-strong);color:var(--fg);
-    font-size:16px;font-weight:700;cursor:pointer;transition:transform .12s;letter-spacing:.2px}
-  .btn:active{transform:translateY(1px) scale(.99)}
-  .btn.primary{background:linear-gradient(180deg,#6ea0ff,#4577f5);border:none;color:#fff;box-shadow:0 12px 28px -12px rgba(99,140,255,.8)}
-  .btn.off{color:#ff8a8a}
-  .btn.danger{background:linear-gradient(180deg,#fb7185,#e11d48);border:none;color:#fff;box-shadow:0 12px 28px -12px rgba(244,63,94,.7)}
+  /* ---------- party ---------- */
+  .fx{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fxc{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:10px 12px 11px;text-align:left;border-radius:var(--r-md);
+    background:var(--surface-2);border:1px solid var(--line);transition:transform .15s var(--ease),border-color .2s,background .2s}
+  .fxc:active{transform:scale(.97)}
+  .fxc .strip{height:22px;border-radius:8px;background:var(--g);box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+  .fxc b{display:block;font:700 15px/1.2 var(--display)}
+  .fxc small{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+  .fxc.on{border-color:var(--accent);background:var(--surface-3);box-shadow:0 0 0 1px var(--accent)}
+  @media (max-width:919px){.fxc:last-child:nth-child(odd){grid-column:span 2}}
 
-  .gate{opacity:.4;pointer-events:none;filter:saturate(.5)}
-  input#keyin{width:100%;margin-top:12px;padding:14px;border-radius:14px;border:1px solid var(--line);background:rgba(0,0,0,.25);color:var(--fg);font-size:15px}
-  input#keyin:focus{outline:none;border-color:var(--accent)}
+  /* ---------- music ---------- */
+  .viz{display:block;width:100%;height:104px;border-radius:var(--r-md);background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line)}
+  .seg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .segb{display:flex;flex-direction:column;gap:2px;padding:11px 12px;text-align:left;border-radius:var(--r-md);background:var(--surface-2);border:1px solid var(--line);
+    transition:transform .15s var(--ease),border-color .2s,background .2s;min-width:0}
+  .segb b{font:700 15px/1.2 var(--display)} .segb small{font-size:11.5px;line-height:1.3;color:var(--ink-3)}
+  .segb:active{transform:scale(.97)}
+  .segb.on{border-color:var(--accent);background:var(--surface-3);box-shadow:0 0 0 1px var(--accent)}
+
+  /* ---------- setup ---------- */
+  .setup input{width:100%;margin:12px 0;padding:14px;border-radius:14px;border:1px solid var(--line-2);background:var(--bg);font-size:16px}
+  .setup input:focus{border-color:var(--accent)}
+
+  /* ---------- sheet ---------- */
+  .scrim{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .25s}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-height:88vh;max-height:88dvh;overflow-y:auto;overscroll-behavior:contain;
+    margin:0 auto;max-width:560px;background:var(--surface);border:1px solid var(--line-2);border-bottom:0;
+    border-radius:28px 28px 0 0;padding:8px max(18px,var(--safe-r)) calc(var(--safe-b) + 24px) max(18px,var(--safe-l));
+    transform:translateY(105%);visibility:hidden;transition:transform .34s var(--ease),visibility 0s .34s}
+  body.sheet-open .scrim{opacity:1;pointer-events:auto}
+  body.sheet-open .sheet{transform:none;visibility:visible;transition:transform .34s var(--ease)}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto 6px}
+  .sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  .sheet-head h2{margin:0;font:700 22px var(--display)}
+  .sheet section{padding:16px 0;border-top:1px solid var(--line)}
+  .sheet section:first-of-type{border-top:0}
+  .sheet .label{display:block;margin-bottom:12px}
+  .sheet .note{margin-top:10px}
+  .names{display:grid;gap:8px}
+  .names label{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border-radius:14px;background:var(--surface-2);border:1px solid var(--line)}
+  .names label:focus-within{border-color:var(--accent)}
+  .names .ic{width:18px;height:18px;color:var(--ink-3)}
+  .names input{flex:1;min-width:0;border:0;background:none;outline:none;font-size:16px}
+  .names small{font:11px var(--mono);color:var(--ink-3)}
+  .kv{display:flex;justify-content:space-between;gap:12px;font-size:14px;color:var(--ink-2);margin-bottom:12px}
+  .kv b{font:600 13px var(--mono);color:var(--ink)}
+  .stack{display:grid;gap:10px}
+
+  /* ---------- wide screens ---------- */
+  @media (min-width:920px){
+    .top{padding-left:max(32px,calc((100vw - 1040px)/2));padding-right:max(32px,calc((100vw - 1040px)/2))}
+    .app{max-width:1040px;display:grid;grid-template-columns:400px minmax(0,1fr);gap:24px;align-items:start;padding-top:14px;padding-bottom:48px}
+    .col-stage{position:sticky;top:84px}
+    .chips{flex-wrap:wrap;margin:0;padding:2px 0}
+    .tabs{position:static;padding:5px;border:1px solid var(--line);border-radius:20px;background:var(--surface);backdrop-filter:none;-webkit-backdrop-filter:none}
+    .tab{max-width:none;flex-direction:row;justify-content:center;gap:8px;min-height:44px;font-size:14px;border-radius:15px}
+    .tab-ic{width:auto;height:auto;background:none!important;color:inherit!important}
+    .tab.on{background:var(--accent);color:var(--accent-ink)}
+    .card{padding:24px}
+    .grid{grid-template-columns:repeat(8,1fr)}
+    .chip-sep{display:none}
+    .dots{grid-template-columns:repeat(14,1fr)}
+    .fx{grid-template-columns:repeat(4,1fr)}
+    .viz{height:150px}
+    #sv{height:260px}
+    .sheet{bottom:auto;top:50%;border-radius:28px;border-bottom:1px solid var(--line-2);transform:translateY(-46%) scale(.97);opacity:0;
+      transition:transform .25s var(--ease),opacity .2s,visibility 0s .25s;padding-bottom:24px}
+    body.sheet-open .sheet{transform:translateY(-50%);opacity:1;transition:transform .25s var(--ease),opacity .2s}
+    .grab{visibility:hidden}
+  }
+  @media (max-width:350px){
+    .orb{width:104px;height:104px}
+    .dots{gap:7px}
+    .seg3{grid-template-columns:1fr}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
 </style>
 </head>
-<body>
-<header class="topbar">
-  <div class="brand">Oasis<small>Ambient Lighting</small></div>
-  <div class="conn"><span class="dot" id="dot"></span><span id="connText">Not connected</span></div>
+<body class="locked">
+<div class="bloom" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bt" viewBox="0 0 24 24"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><path d="M4 7h9M19 7h1M4 17h1M11 17h9"/><circle cx="16" cy="7" r="2.5"/><circle cx="8" cy="17" r="2.5"/></symbol>
+  <symbol id="i-scenes" viewBox="0 0 24 24"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M18.5 15v5M16 17.5h5"/></symbol>
+  <symbol id="i-color" viewBox="0 0 24 24"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></symbol>
+  <symbol id="i-white" viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.6 1.1 1.3 1.1 2.2h5c0-.9.4-1.6 1.1-2.2A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-party" viewBox="0 0 24 24"><path d="M13 2L4.5 13.5H11l-1 8.5 8.5-11.5H12z"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20z"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
+  <symbol id="i-room" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M8.5 3h7l3 9h-13zM12 12v8M8 21h8"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V5.5l11-2V16"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-all" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="brand"><span class="mark" aria-hidden="true"></span>Oasis</div>
+  <button class="conn" id="connPill" type="button"><span class="dot" id="dot"></span><span id="connText">Not connected</span></button>
+  <button class="iconbtn" id="moreBtn" type="button" aria-label="Settings"><svg class="ic"><use href="#i-more"/></svg></button>
 </header>
-<main>
-  <div class="card">
-    <button id="connect" class="connect">Connect Bluetooth</button>
-    <div class="status" id="status">Tap connect, then choose a lamp.</div>
-    <div class="note" id="hint" style="margin-top:8px"></div>
-  </div>
 
-  <div class="card hide" id="setupcard">
-    <div class="label">One-time setup on this device</div>
-    <div class="note">Paste your personal setup link (ending in <code>#net=…&app=…</code>) to load your lamp keys onto this phone. They stay only on this device.</div>
-    <input id="keyin" placeholder="paste your setup link here" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <button class="btn primary" id="savekeys" style="width:100%;margin-top:12px">Save &amp; start</button>
-  </div>
-
-  <div id="panel" class="gate">
-    <div class="card">
-      <div class="label">Where</div>
-      <div class="seg" id="targets"></div>
+<main class="app">
+  <div class="col col-stage">
+    <div class="card setup hide" id="setupcard">
+      <div class="head"><span class="label">One-time setup on this device</span></div>
+      <p class="note">Paste your personal setup link (ending in <code>#net=…&amp;app=…</code>) to load your lamp keys onto this phone. They stay only on this device.</p>
+      <input type="text" id="keyin" placeholder="Paste your setup link" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Setup link">
+      <button class="btn primary" id="savekeys" type="button">Save and start</button>
     </div>
 
-    <div class="tabbar">
-      <button class="tab on" data-tab="originals">Originals</button>
-      <button class="tab" data-tab="color">Color</button>
-      <button class="tab" data-tab="white">White</button>
-      <button class="tab" data-tab="party">Party</button>
-    </div>
+    <div class="chips gated" id="targets" role="group" aria-label="Which lamps"></div>
 
-    <!-- OASIS Originals -->
-    <div class="card pane" id="pane-originals">
-      <div class="label">OASIS Originals</div>
+    <section class="stage" id="stage" aria-label="Current light">
+      <div class="stage-top">
+        <button class="pwr gated" id="off" type="button" aria-label="Power off"><span class="pwr-ic"><svg class="ic"><use href="#i-power"/></svg></span>Off</button>
+        <div class="orb" aria-hidden="true"><div class="orb-core"></div></div>
+        <button class="pwr gated" id="on" type="button" aria-label="Power on"><span class="pwr-ic"><svg class="ic"><use href="#i-sun"/></svg></span>On</button>
+      </div>
+      <div class="look"><h1 id="lookName">Amber</h1><p id="lookSub">All lamps</p></div>
+      <p class="status" id="status" role="status" aria-live="polite"></p>
+
+      <div class="cta">
+        <button class="btn primary big" id="connect" type="button"><svg class="ic"><use href="#i-bt"/></svg><span class="spin"></span><span id="connectLabel">Connect Bluetooth</span></button>
+        <p class="note" id="hint"></p>
+      </div>
+
+      <div class="ctl gated">
+        <div class="srow"><span class="label">Brightness</span><span class="val" id="brv">100%</span></div>
+        <input type="range" class="thick" id="bright" min="1" max="100" value="100" aria-label="Brightness">
+        <div class="actions">
+          <button class="ghost" id="saveLook" type="button"><svg class="ic"><use href="#i-heart"/></svg>Save look</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col col-controls">
+    <nav class="tabs" role="tablist" aria-label="Controls">
+      <button class="tab on" role="tab" type="button" data-tab="scenes" aria-selected="true"><span class="tab-ic"><svg class="ic"><use href="#i-scenes"/></svg></span>Scenes</button>
+      <button class="tab" role="tab" type="button" data-tab="color" aria-selected="false"><span class="tab-ic"><svg class="ic"><use href="#i-color"/></svg></span>Color</button>
+      <button class="tab" role="tab" type="button" data-tab="white" aria-selected="false"><span class="tab-ic"><svg class="ic"><use href="#i-white"/></svg></span>White</button>
+      <button class="tab" role="tab" type="button" data-tab="party" aria-selected="false"><span class="tab-ic"><svg class="ic"><use href="#i-party"/></svg></span>Party</button>
+      <button class="tab" role="tab" type="button" data-tab="music" aria-selected="false"><span class="tab-ic"><svg class="ic"><use href="#i-music"/></svg></span>Music</button>
+    </nav>
+
+    <!-- Scenes -->
+    <div class="card pane gated" id="pane-scenes" role="tabpanel">
+      <div class="head"><span class="label">Oasis Originals</span></div>
       <div class="grid" id="originals"></div>
+      <div class="divider"></div>
+      <div class="head"><span class="label">My looks</span><button class="link hide" id="editFavs" type="button">Edit</button></div>
+      <div class="grid" id="favs"></div>
+      <div class="empty note" id="favEmpty">Set any color or white, then tap <b>Save look</b> to keep it here.</div>
     </div>
 
-    <!-- Full spectrum -->
-    <div class="card pane hide" id="pane-color">
-      <div class="label">Full spectrum</div>
-      <div id="sv"><div id="svh"></div></div>
+    <!-- Color -->
+    <div class="card pane gated hide" id="pane-color" role="tabpanel">
+      <div class="head"><span class="label">Vivid</span></div>
+      <div class="dots" id="vivid"></div>
+      <div class="label sub">Full spectrum</div>
       <div class="hue"><div id="hueh"></div></div>
-      <div class="preview"><div class="swatch" id="swatch"></div>
-        <div><div class="hex" id="hex">#0000ff</div><div class="hex" id="rgbtxt">rgb(0, 0, 255)</div></div></div>
-      <div class="vivid" id="vivid"></div>
+      <div id="sv"><div id="svh"></div></div>
+      <div class="preview">
+        <div class="swatch" id="swatch"></div>
+        <label class="hexwrap">#<input type="text" id="hex" maxlength="7" value="0000FF" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Hex color"></label>
+        <span id="rgbtxt">0 · 0 · 255</span>
+      </div>
     </div>
 
     <!-- White -->
-    <div class="card pane hide" id="pane-white">
-      <div class="label">White &amp; warmth</div>
-      <div class="srow"><span class="end">🔥 Warm</span><span class="val" id="ktv">4000K</span><span class="end">Cool ❄️</span></div>
-      <input type="range" id="kelvin" min="1800" max="6500" step="50" value="4000">
-      <div class="wprev"><div class="swatch" id="wswatch"></div><div class="note" id="wdesc">Neutral white</div></div>
-      <div class="srow"><span class="end">Dim</span><span class="val" id="wbrv">80%</span><span class="end">Bright</span></div>
-      <input type="range" id="wbright" min="1" max="100" value="80">
-      <button class="btn primary" id="applywhite" style="width:100%;margin-top:14px">Apply white</button>
+    <div class="card pane gated hide" id="pane-white" role="tabpanel">
+      <div class="head"><span class="label">White and warmth</span></div>
+      <div class="wprev"><div class="swatch" id="wswatch"></div><div><div class="big" id="ktv">4000K</div><p class="note" id="wdesc">Neutral white</p></div></div>
+      <input type="range" class="slim" id="kelvin" min="1800" max="6500" step="50" value="4000" aria-label="Color temperature">
+      <div class="ends"><span>Warm</span><span>Cool</span></div>
+      <div class="label sub">Presets</div>
+      <div class="chips inset" id="wpresets"></div>
     </div>
 
     <!-- Party -->
-    <div class="card pane hide" id="pane-party">
-      <div class="label">Effect</div>
-      <div class="seg" id="effects"></div>
-      <button class="btn primary" id="party" style="width:100%;margin-top:16px;font-size:17px">Start Party 🎉</button>
-      <div class="srow" style="margin-top:18px"><span class="end">🐢 Slow</span><span class="val" id="spv">Speed 55%</span><span class="end">Max ⚡</span></div>
-      <input type="range" id="speed" min="0" max="100" step="1" value="55">
-      <div class="note" style="margin-top:12px">Only sends colors — can't harm the lamps. Stop halts it instantly. Change the effect live while it runs.</div>
+    <div class="card pane gated hide" id="pane-party" role="tabpanel">
+      <div class="head"><span class="label">Effect</span></div>
+      <div class="fx" id="effects"></div>
+      <div class="srow" style="margin-top:20px"><span class="label">Speed</span><span class="val" id="spv">55%</span></div>
+      <input type="range" class="slim" id="speed" min="0" max="100" step="1" value="55" aria-label="Party speed">
+      <div class="ends"><span>Slow</span><span>Max</span></div>
+      <button class="btn primary big" id="party" type="button" style="margin-top:18px"><svg class="ic fill"><use id="partyIcon" href="#i-play"/></svg><span id="partyLabel">Start party</span></button>
+      <p class="note" style="margin-top:12px">Runs across every room while this page stays open. Change the effect or speed live. Strobe and Lightning flash quickly.</p>
     </div>
 
-    <div class="card">
-      <div class="srow"><span class="label" style="margin:0">Brightness</span><span class="val" id="brv">100%</span></div>
-      <input type="range" id="bright" min="1" max="100" value="100">
-    </div>
-
-    <div class="card">
-      <div class="row"><button class="btn" id="on">Power On</button><button class="btn off" id="off">Power Off</button></div>
+    <!-- Music -->
+    <div class="card pane gated hide" id="pane-music" role="tabpanel">
+      <div class="head"><span class="label">Lights that listen</span><span class="val" id="mstate">Idle</span></div>
+      <canvas class="viz" id="viz" aria-hidden="true"></canvas>
+      <div class="label sub">Style</div>
+      <div class="seg3" id="mstyles"></div>
+      <div class="label sub">Colors</div>
+      <div class="chips inset" id="mpals"></div>
+      <div class="srow" style="margin-top:20px"><span class="label">Sensitivity</span><span class="val" id="msv">55%</span></div>
+      <input type="range" class="slim" id="msens" min="10" max="100" step="1" value="55" aria-label="Music sensitivity">
+      <div class="ends"><span>Loud rooms</span><span>Quiet rooms</span></div>
+      <button class="btn primary big" id="music" type="button" style="margin-top:18px"><svg class="ic fill"><use id="musicIcon" href="#i-play"/></svg><span id="musicLabel">Start listening</span></button>
+      <p class="note" style="margin-top:12px">Uses this phone’s microphone to follow whatever is playing in the room. Sound is analysed on the phone and is never recorded or sent anywhere.</p>
     </div>
   </div>
 </main>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="grab"></div>
+  <div class="sheet-head"><h2 id="sheetTitle">Settings</h2><button class="iconbtn" id="sheetClose" type="button" aria-label="Close"><svg class="ic"><use href="#i-x"/></svg></button></div>
+  <section>
+    <span class="label">Names</span>
+    <div class="names" id="names"></div>
+  </section>
+  <section>
+    <span class="label">This device</span>
+    <div class="kv"><span>Connection</span><b id="devConn">Not connected</b></div>
+    <div class="kv"><span>This phone’s ID</span><b id="devSrc"></b></div>
+    <div class="kv"><span>Sync with other phones</span><b id="devSync">Off</b></div>
+    <div class="stack">
+      <button class="btn quiet" id="disconnect" type="button">Connect</button>
+      <button class="btn quiet" id="newId" type="button">Get a new phone ID</button>
+    </div>
+    <p class="note">Lamps ignoring this phone while other phones still work? Get a new phone ID. It is safe to do at any time.</p>
+  </section>
+  <section>
+    <span class="label">Sharing with others</span>
+    <p class="note" style="margin-top:0">Everyone can control the lamps at once and the latest command wins. When sync is on, a change made on one phone shows up on the others, and a phone that connects picks up the current look from one already connected. Each lamp links to one phone at a time, so each person picks a different OASIS_… lamp when connecting. Any lamp reaches the whole home. On iPhone, open this page in the free Bluefy app; on Android, use Chrome.</p>
+  </section>
+</div>
 
 <script>
 /* ===== mesh_ble.js (verified byte-for-byte vs Python) ===== */
@@ -256,22 +534,53 @@
 })(window);
 
 /* ===== Config (your mesh) — NO SECRET KEYS in this file ===== */
-// Each device gets its OWN unique mesh sender address so multiple phones never
-// collide on sequence numbers (which caused the "someone else used it, now I'm
-// locked out" bug). Independent senders => everyone can control; last command wins.
-function deviceSource() {
-  let s = parseInt(localStorage.getItem('oasis_src') || '', 10);
-  if (!Number.isInteger(s) || s < 0x1000 || s > 0x7ffe) {
-    s = 0x1000 + Math.floor(Math.random() * (0x7ffe - 0x1000)); // random, avoids Mac's 0x7fff
-    localStorage.setItem('oasis_src', String(s));
+const LAMPS = [['OASIS_9796f4', 0x4967], ['OASIS_7b37c4', 0x5BC7], ['OASIS_99bc80', 0x778C], ['OASIS_577000', 0x7105], ['OASIS_94378c', 0x0102], ['OASIS_af8528', 0x0103]];
+
+// Storage that still works when the browser blocks localStorage (private mode,
+// full quota): values fall back to memory for this session.
+const _mem = {};
+function sget(k) { try { const v = localStorage.getItem(k); if (v != null) return v; } catch (_) { } return k in _mem ? _mem[k] : null; }
+function sset(k, v) { _mem[k] = v; try { localStorage.setItem(k, v); } catch (_) { } }
+function sdel(k) { delete _mem[k]; try { localStorage.removeItem(k); } catch (_) { } }
+
+// ----- This phone's mesh identity -----
+// Lamps remember the highest message number seen from each sender and ignore
+// anything lower (replay protection). So every phone needs its OWN sender
+// address: then each has an independent counter, everyone can control at once
+// (last command wins) and nobody is locked out when someone else leaves.
+const SRC_MIN = 0x1000, SRC_MAX = 0x7ffe;              // 0x7fff is the Mac
+// Never land on (or right next to) a lamp's own address — a lamp ignores
+// messages that claim to come from itself.
+function srcOK(s) { return Number.isInteger(s) && s >= SRC_MIN && s <= SRC_MAX && !LAMPS.some(l => Math.abs(l[1] - s) < 16); }
+function randomSource() {
+  for (let i = 0; i < 64; i++) {
+    let r;
+    try { r = crypto.getRandomValues(new Uint16Array(1))[0]; } catch (_) { r = Math.floor(Math.random() * 65536); }
+    const s = SRC_MIN + (r % (SRC_MAX - SRC_MIN + 1));
+    if (srcOK(s)) return s;
   }
+  return 0x2000 + Math.floor(Math.random() * 0x1000);
+}
+function deviceSource() {
+  let s = parseInt(sget('oasis_src') || '', 10);
+  if (!srcOK(s)) { s = randomSource(); sset('oasis_src', String(s)); }
   return s;
+}
+// A brand-new identity the lamps have never seen. Used automatically when the
+// message counter is nearly used up, and by "New phone ID" in Settings when the
+// lamps have stopped listening to this phone.
+function rotateIdentity() {
+  const old = CFG.source; let s = randomSource();
+  for (let i = 0; i < 8 && s === old; i++) s = randomSource();
+  try { Object.keys(localStorage).forEach(k => { if (k.indexOf('oseq_' + CFG.meshUUID + '_' + old + '_') === 0) localStorage.removeItem(k); }); } catch (_) { }
+  Object.keys(_mem).forEach(k => { if (k.indexOf('oseq_') === 0) delete _mem[k]; });
+  sset('oasis_src', String(s)); CFG.source = s; return s;
 }
 const CFG = {
   meshUUID: '40B97412-0990-4717-8274-3C1F47A73CF5',
   source: deviceSource(),
   groups: { livingRoomID: 0xE9E6, bedroomID: 0xD77A },
-  lamps: [['OASIS_9796f4', 0x4967], ['OASIS_7b37c4', 0x5BC7], ['OASIS_99bc80', 0x778C], ['OASIS_577000', 0x7105], ['OASIS_94378c', 0x0102], ['OASIS_af8528', 0x0103]],
+  lamps: LAMPS,
 };
 const SVC = 0x1828;
 const UUID_IN = '00002add-0000-1000-8000-00805f9b34fb';
@@ -294,53 +603,247 @@ let KEYS = loadKeys();
 let NET = KEYS ? MESH.hexToBytes(KEYS.net) : null;
 let APP = KEYS ? MESH.hexToBytes(KEYS.app) : null;
 
-/* ===== Bluetooth transport ===== */
-let dev = null, chIn = null, chOut = null, reasm = null, iv = null, connected = false, busy = false;
+/* ===== Small helpers + saved interface state ===== */
+// ?demo previews the interface with no lamps: nothing is sent over Bluetooth.
+const DEMO = new URLSearchParams(location.search).has('demo');
 const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const buzz = () => { try { navigator.vibrate && navigator.vibrate(8); } catch (_) { } };
-function setStatus(t, cls) { const s = $('#status'); s.textContent = t; s.style.color = cls === 'ok' ? 'var(--ok)' : cls === 'err' ? 'var(--err)' : 'var(--muted)'; }
-function setConn(on, text) { $('#dot').classList.toggle('on', on); $('#connText').textContent = text; }
+const icon = (id, cls) => `<svg class="ic${cls ? ' ' + cls : ''}"><use href="#i-${id}"/></svg>`;
+const UI = Object.assign({
+  tab: 'scenes', target: 'all', bright: 100, power: null, effect: 'rainbow', speed: 55, kelvin: 4000,
+  look: { name: 'Amber', rgb: [255, 174, 29], key: '' }, favs: [], names: {},
+  mstyle: 'pulse', mpal: 'rainbow', msens: 55,
+}, (() => { try { return JSON.parse(localStorage.getItem('oasis_ui') || '{}') || {}; } catch (_) { return {}; } })());
+if (!UI.look || !Array.isArray(UI.look.rgb)) UI.look = { name: 'Amber', rgb: [255, 174, 29], key: '' };
+if (!Array.isArray(UI.favs)) UI.favs = [];
+delete UI.recents;
+if (!UI.names || typeof UI.names !== 'object') UI.names = {};
+const saveUI = () => { try { localStorage.setItem('oasis_ui', JSON.stringify(UI)); } catch (_) { } };
 
-function onNotify(e) { const v = new Uint8Array(e.target.value.buffer); try { const res = reasm.feed(v); if (res) { const t = res[0], data = res[1]; if (t === 1 && MESH.authenticateBeacon(NET, data)) iv = MESH.parseBeaconIV(data); } } catch (_) { } }
-function onDisconnect() { connected = false; $('#panel').classList.add('gate'); $('#connect').classList.remove('connected'); $('#connect').textContent = 'Reconnect Bluetooth'; setConn(false, 'Disconnected'); setStatus('Disconnected — tap to reconnect.', 'err'); }
+/* ===== Hearing the mesh: decrypt what other phones send ===== */
+// The lamps cannot report their state (the official app cannot read it either),
+// so this phone listens instead: it asks its lamp to pass along everything on
+// the mesh, and mirrors commands sent by other phones.
+const RX = (() => {
+  const E = MESH.aesEncrypt, u8 = n => new Uint8Array(n);
+  const be = (v, n) => { const o = u8(n); for (let i = n - 1; i >= 0; i--) { o[i] = v & 0xff; v = Math.floor(v / 256); } return o; };
+  const cat = (...a) => { let n = 0; a.forEach(x => n += x.length); const o = u8(n); let k = 0; a.forEach(x => { o.set(x, k); k += x.length; }); return o; };
+  const ctrBlock = (key, nonce, c) => { const A = u8(16); A[0] = 14 - nonce.length; A.set(nonce, 1); A[14] = (c >> 8) & 255; A[15] = c & 255; return E(key, A); };
+  const stream = (key, nonce, src, n) => { const out = u8(n); let c = 1; for (let i = 0; i < n; i += 16) { const S = ctrBlock(key, nonce, c++); for (let j = 0; j < 16 && i + j < n; j++) out[i + j] = src[i + j] ^ S[j]; } return out; };
+  function tag(key, nonce, plain, tagLen) {
+    const B0 = u8(16); B0[0] = (((tagLen - 2) / 2) << 3) | (14 - nonce.length); B0.set(nonce, 1); B0[14] = (plain.length >> 8) & 255; B0[15] = plain.length & 255;
+    let X = E(key, B0);
+    for (let i = 0; i < plain.length; i += 16) { const blk = u8(16); blk.set(plain.subarray(i, i + 16)); for (let j = 0; j < 16; j++) blk[j] ^= X[j]; X = E(key, blk); }
+    const S0 = ctrBlock(key, nonce, 0), T = u8(tagLen); for (let i = 0; i < tagLen; i++) T[i] = X[i] ^ S0[i]; return T;
+  }
+  // AES-CCM without extra data. open() returns null when the message is not authentic.
+  function seal(key, nonce, plain, tagLen) { return cat(stream(key, nonce, plain, plain.length), tag(key, nonce, plain, tagLen)); }
+  function open(key, nonce, data, tagLen) {
+    const n = data.length - tagLen; if (n < 0) return null;
+    const plain = stream(key, nonce, data, n), T = tag(key, nonce, plain, tagLen);
+    let diff = 0; for (let i = 0; i < tagLen; i++) diff |= T[i] ^ data[n + i];
+    return diff ? null : plain;
+  }
+  let kNet = null, kc = null;
+  const keys = net => { if (kNet !== net) { kc = MESH.k2(net); kNet = net; } return kc; };
+  const mask = (priv, iv, enc) => E(priv, cat(u8(5), be(iv, 4), enc.subarray(0, 7))).subarray(0, 6);
+  function openNetwork(net, iv, pdu) {
+    const { nid, enc, priv } = keys(net);
+    if (pdu.length < 14 || (pdu[0] & 0x7f) !== nid || (pdu[0] >> 7) !== (iv & 1)) return null;
+    const body = pdu.subarray(7), m = mask(priv, iv, body), h = u8(6); for (let i = 0; i < 6; i++) h[i] = pdu[1 + i] ^ m[i];
+    const ctl = h[0] >> 7, plain = open(enc, cat(Uint8Array.of(0), h, u8(2), be(iv, 4)), body, ctl ? 8 : 4);
+    if (!plain || plain.length < 3) return null;
+    return { ctl, ttl: h[0] & 0x7f, seq: (h[1] << 16) | (h[2] << 8) | h[3], src: (h[4] << 8) | h[5], dst: (plain[0] << 8) | plain[1], lower: plain.subarray(2) };
+  }
+  function openAccess(app, iv, m) {
+    const l = m.lower;
+    if (l[0] & 0x80 || !(l[0] & 0x40) || (l[0] & 0x3f) !== MESH.k4(app)) return null;   // single-part, app-key messages only
+    return open(app, cat(Uint8Array.of(1, 0), be(m.seq, 3), be(m.src, 2), be(m.dst, 2), be(iv, 4)), l.subarray(1), 4);
+  }
+  // Proxy setup message: "forward everything you hear to this phone".
+  function filterPdu(net, iv, seq, src) {
+    const { nid, enc, priv } = keys(net);
+    const h = cat(Uint8Array.of(0x80), be(seq, 3), be(src, 2));
+    const body = seal(enc, cat(Uint8Array.of(3, 0), be(seq, 3), be(src, 2), u8(2), be(iv, 4)), Uint8Array.of(0, 0, 0x00, 0x01), 8);
+    const m = mask(priv, iv, body), obf = u8(6); for (let i = 0; i < 6; i++) obf[i] = h[i] ^ m[i];
+    return cat(Uint8Array.of(((iv & 1) << 7) | nid), obf, body);
+  }
+  return { openNetwork, openAccess, filterPdu, seal, open };
+})();
+
+/* ===== Bluetooth transport ===== */
+let dev = null, chIn = null, chOut = null, reasm = null, iv = null, connected = false, connecting = false, busy = false, pending = null;
+function setStatus(t, cls) {
+  const s = $('#status'); s.textContent = t; s.className = 'status' + (cls ? ' ' + cls : '');
+  clearTimeout(setStatus.t);
+  if (cls === 'ok' && /^Sent/.test(t)) setStatus.t = setTimeout(() => { if (s.textContent === t) s.textContent = ''; }, 1800);
+}
+function setConn(on, text) { $('#dot').classList.toggle('on', on); $('#connText').textContent = text; $('#devConn').textContent = text; $('#disconnect').textContent = on ? 'Disconnect' : 'Connect'; }
+function setLocked(l) { document.body.classList.toggle('locked', l); $$('.gated').forEach(e => { if (l) e.setAttribute('inert', ''); else e.removeAttribute('inert'); }); }
+function setConnecting(on) { connecting = on; const b = $('#connect'); b.classList.toggle('busy', on); b.disabled = on; }
+
+function onNotify(e) {
+  const dv = e.target.value, v = new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength);
+  try {
+    const res = reasm.feed(v); if (!res) return;
+    const t = res[0], data = res[1];
+    if (t === 1) { if (MESH.authenticateBeacon(NET, data)) iv = MESH.parseBeaconIV(data); }
+    else if (t === 2) { listening = true; paintSync(); }            // the lamp confirmed it will forward mesh traffic
+    else if (t === 0 && iv !== null) onMeshPdu(data);
+  } catch (_) { }
+}
+
+/* ===== Staying in sync with other phones ===== */
+const SYNC_ADDR = 0xC0DE;                       // a group no lamp belongs to: phones use it to talk to each other
+const OP_HELLO = 0xFE, OP_STATE = 0xFF;         // "what is the current look?" / "here it is"
+let listening = false, stateFresh = false, wantState = 0, gotState = false, answerTimer = null, remoteNote = 0, remoteSave = null;
+const rxSeq = new Map();
+function paintSync() { $('#devSync').textContent = DEMO ? 'Demo' : !connected ? 'Off' : listening ? 'On' : 'Not confirmed'; }
+function onMeshPdu(data) {
+  const m = RX.openNetwork(NET, iv, data);
+  if (!m || m.ctl || m.src === CFG.source) return;
+  const last = rxSeq.get(m.src); if (last != null && m.seq <= last) return;      // already seen (or a replay)
+  const a = RX.openAccess(APP, iv, m); if (!a) return;
+  rxSeq.set(m.src, m.seq); listening = true;
+  applyRemote(m.dst, a);
+}
+function matchLook(rgb, k) {
+  const o = ORIGINALS.find(([, sp]) => k ? sp.k === k : sp.rgb && sameRGB(sp.rgb, rgb)); if (o) return { name: o[0], key: 'o:' + o[0] };
+  const f = UI.favs.find(x => k ? x.k === k : !x.k && sameRGB(x.rgb, rgb)); if (f) return { name: f.name, key: 'f:' + f.id };
+  return { name: k ? describeK(k) : colorName(rgb[0], rgb[1], rgb[2]), key: '' };
+}
+function showRemoteLook(rgb, k) { const mt = matchLook(rgb, k); UI.look = { name: mt.name, rgb: rgb.slice(), key: mt.key }; if (k) { UI.look.k = k; UI.kelvin = k; $('#kelvin').value = k; } else setPickerRGB(rgb[0], rgb[1], rgb[2]); }
+const pct = v => Math.max(1, Math.min(100, v));
+// A command from another phone: show it here, send nothing.
+function applyRemote(dst, a) {
+  if (a.length < 4 || a[1] !== 0xe5 || a[2] !== 0x02) return;
+  const op = a[0], b = a.subarray(3);
+  if (dst === SYNC_ADDR) { onSyncMessage(op, b); return; }
+  if (partyOn || musicOn) return;                       // this phone is running its own show
+  if (op === 0xc6 && b.length >= 3) showRemoteLook([b[0], b[1], b[2]], 0);
+  else if (op === 0xd2 && b.length >= 3) { showRemoteLook(kelvinToRGB(b[0] | (b[1] << 8)), b[0] | (b[1] << 8)); UI.bright = pct(b[2]); }
+  else if (op === 0xc5 && b.length >= 2) showRemoteLook(kelvinToRGB(b[0] | (b[1] << 8)), b[0] | (b[1] << 8));
+  else if (op === 0xc4 && b.length >= 1) UI.bright = pct(b[0]);
+  else if (op === 0xc3 && b.length >= 1) UI.power = !!b[0];
+  else return;
+  stateFresh = true; paintBright(); paintWhitePreview(); paintStage();
+  clearTimeout(remoteSave); remoteSave = setTimeout(saveUI, 600);
+  if (Date.now() - remoteNote > 4000) { remoteNote = Date.now(); setStatus('Changed from another phone.', ''); }
+}
+function stateBytes() { const l = UI.look, k = l.k || 0; return Uint8Array.of(OP_STATE, 0xe5, 0x02, UI.power === false ? 0 : UI.power === true ? 1 : 2, UI.bright, l.rgb[0], l.rgb[1], l.rgb[2], k & 255, k >> 8); }
+function onSyncMessage(op, b) {
+  if (op === OP_HELLO) {
+    // Someone just connected and wants the current look. Answer after a short random
+    // wait, unless another phone answers first.
+    if (!stateFresh || partyOn || musicOn || Date.now() - wantState < 5000) return;
+    clearTimeout(answerTimer);
+    answerTimer = setTimeout(() => { if (connected) sendAccess(SYNC_ADDR, stateBytes()).catch(() => { }); }, 150 + Math.random() * 500);
+  } else if (op === OP_STATE && b.length >= 7) {
+    clearTimeout(answerTimer);
+    if (gotState || Date.now() - wantState > 8000) return;          // only take it right after connecting
+    gotState = true; stateFresh = true;
+    if (b[0] < 2) UI.power = !!b[0];
+    UI.bright = pct(b[1]);
+    const k = b[5] | (b[6] << 8); showRemoteLook(k ? kelvinToRGB(k) : [b[2], b[3], b[4]], k);
+    saveUI(); paintBright(); paintWhitePreview(); paintStage(); setStatus('Synced with another phone.', 'ok');
+  }
+}
+// After connecting: ask the lamp to forward mesh traffic, then ask other phones for the current look.
+async function startSync() {
+  listening = false; gotState = false; rxSeq.clear(); paintSync();
+  if (DEMO) return;
+  const run = async () => { const pdu = RX.filterPdu(NET, iv, nextSeq(), CFG.source); for (const c of MESH.fragmentProxy(2, pdu)) await writeChunk(c); };
+  try { const p = _sendChain.then(run, run); _sendChain = p.catch(() => { }); await p; } catch (_) { }
+  await sleep(350); if (!connected) return;
+  wantState = Date.now();
+  try { await sendAccess(SYNC_ADDR, Uint8Array.of(OP_HELLO, 0xe5, 0x02, 0)); } catch (_) { }
+  setTimeout(paintSync, 1500);
+}
+function viaName() { const n = dev && dev.name; return n && CFG.lamps.some(l => l[0] === n) ? nameOf(n) : (n || ''); }
+function onConnected() {
+  connected = true; setLocked(false);
+  setConn(true, DEMO ? 'Demo' : 'Connected');
+  if (!DEMO && viaName()) $('#devConn').textContent = 'Via ' + viaName();
+  setStatus(DEMO ? 'Demo mode: nothing is sent to lamps.' : 'Ready. Pick a look.', 'ok');
+  startSync();
+}
+let userLeft = false, retrying = false;
+function onDisconnect() {
+  const was = connected;
+  connected = false; partyOn = false; pending = null; if (musicOn) stopMusic(); setLocked(true); paintParty();
+  $('#connectLabel').textContent = 'Reconnect Bluetooth';
+  setConn(false, 'Disconnected'); setStatus('Disconnected. Tap to reconnect.', 'err'); listening = false; paintSync();
+  if (was && !userLeft && !DEMO && dev) autoReconnect();
+}
+// Open the mesh proxy link on the chosen lamp and wait for its beacon.
+async function openLink(waitMs) {
+  const server = await dev.gatt.connect();
+  const svc = await server.getPrimaryService(SVC);
+  chIn = await svc.getCharacteristic(UUID_IN);
+  chOut = await svc.getCharacteristic(UUID_OUT);
+  reasm = new MESH.Reassembler(); iv = null;
+  await chOut.startNotifications();
+  chOut.addEventListener('characteristicvaluechanged', onNotify);
+  const t0 = Date.now(); while (iv === null && Date.now() - t0 < waitMs) await sleep(150);
+  return iv !== null;
+}
+// Links drop when someone walks out of range or a lamp gets busy. Try the same
+// lamp again a few times before asking the person to do anything.
+async function autoReconnect() {
+  if (retrying) return; retrying = true; setConnecting(true);
+  for (let i = 1; i <= 3 && !connected && !userLeft; i++) {
+    setConn(false, 'Reconnecting'); setStatus('Connection dropped. Reconnecting (' + i + ' of 3)…');
+    await sleep(700 * i);
+    if (userLeft) break;
+    try { if (await openLink(8000)) { onConnected(); break; } try { dev.gatt.disconnect(); } catch (_) { } } catch (_) { }
+  }
+  retrying = false; setConnecting(false);
+  if (!connected) { setConn(false, 'Disconnected'); setStatus(userLeft ? 'Disconnected.' : 'Couldn’t reconnect. Tap to reconnect, and pick another OASIS_… lamp if this one is taken.', 'err'); }
+}
 
 async function connect() {
-  if (!NET) { setStatus('Finish the one-time setup below first.', 'err'); return; }
+  if (connecting || connected) return;
+  if (DEMO) { iv = 0; onConnected(); return; }
+  if (!NET) { setStatus('Finish the one-time setup first.', 'err'); return; }
   if (!navigator.bluetooth) { setStatus('This browser has no Bluetooth. On iPhone use the Bluefy app; on Android use Chrome.', 'err'); return; }
-  setStatus('Choose a lamp named OASIS_… in the Bluetooth popup…');
+  setStatus('Choose a lamp named OASIS_… in the Bluetooth popup.');
+  setConnecting(true); userLeft = false;
   try {
     dev = await navigator.bluetooth.requestDevice({ filters: [{ services: [SVC] }] });
     dev.addEventListener('gattserverdisconnected', onDisconnect);
     setStatus('Connecting…');
-    const server = await dev.gatt.connect();
-    const svc = await server.getPrimaryService(SVC);
-    chIn = await svc.getCharacteristic(UUID_IN);
-    chOut = await svc.getCharacteristic(UUID_OUT);
-    reasm = new MESH.Reassembler(); iv = null;
-    await chOut.startNotifications();
-    chOut.addEventListener('characteristicvaluechanged', onNotify);
-    setStatus('Waiting for the mesh to say hello…');
-    const t0 = Date.now(); while (iv === null && Date.now() - t0 < 20000) await sleep(150);
-    if (iv === null) { setStatus('Connected but no mesh beacon — move closer and reconnect.', 'err'); return; }
-    connected = true;
-    $('#panel').classList.remove('gate');
-    $('#connect').classList.add('connected'); $('#connect').textContent = 'Bluetooth connected ✓';
-    setConn(true, 'Connected'); setStatus('Ready — pick a color.', 'ok');
+    if (!await openLink(20000)) { setStatus('Connected but no mesh beacon. Move closer and reconnect.', 'err'); return; }
+    onConnected();
   } catch (err) {
     const m = (err && err.message) || String(err);
-    if (/cancel|chooser|No device selected|not found/i.test(m)) setStatus('No lamp picked — tap Connect and choose an OASIS_… lamp.', 'err');
-    else setStatus('Couldn’t connect — that lamp may already be in use by another phone. Tap Connect again and pick a different OASIS_… lamp.', 'err');
-  }
+    if (/cancel|chooser|No device selected|not found/i.test(m)) setStatus('No lamp picked. Tap Connect and choose an OASIS_… lamp.', 'err');
+    else setStatus('Couldn’t connect. Each lamp links to one phone at a time, so that one may be taken. Tap Connect again and pick a different OASIS_… lamp.', 'err');
+  } finally { setConnecting(false); }
 }
 async function writeChunk(c) {
   try { if (chIn.writeValueWithoutResponse) { await chIn.writeValueWithoutResponse(c); return; } }
   catch (e) { /* fast write not available right now — fall back to reliable write */ }
   await chIn.writeValue(c);
 }
-function nextSeq() { const key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv; let s = parseInt(localStorage.getItem(key) || '', 10); if (!Number.isFinite(s)) s = Math.floor(Date.now() / 1000) % 0x800000; localStorage.setItem(key, String((s + 1) & 0xffffff)); return s & 0xffffff; }
+// Message counter for this identity. It must only ever go up: a lower number
+// than the lamps have already seen is silently ignored.
+const SEQ_LIMIT = 0xFFF000;   // leave headroom below the 24-bit ceiling
+function nextSeq() {
+  let key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv;
+  let s = parseInt(sget(key) || '', 10);
+  if (Number.isFinite(s) && s >= SEQ_LIMIT) {            // counter used up: start over as a new sender
+    rotateIdentity(); paintIdentity();
+    key = 'oseq_' + CFG.meshUUID + '_' + CFG.source + '_' + iv; s = NaN;
+  }
+  if (!Number.isFinite(s) || s < 0) s = Math.floor(Date.now() / 1000) % 0x800000;
+  sset(key, String(s + 1));
+  return s;
+}
 let _sendChain = Promise.resolve();
 function sendAccess(dst, access) {
+  if (DEMO) return sleep(6);
   const run = async () => {
     const seq = nextSeq();
     const lower = MESH.encryptAccess(APP, iv, seq, CFG.source, dst, access, false);
@@ -352,13 +855,16 @@ function sendAccess(dst, access) {
   return p;
 }
 function resolve(target) { if (target === 'all') return Object.values(CFG.groups); if (CFG.groups[target] != null) return [CFG.groups[target]]; const l = CFG.lamps.find(x => x[0] === target); if (l) return [l[1]]; return []; }
-let target = 'all';
-async function command(accesses) {
-  if (!connected) { setStatus('Tap Connect Bluetooth first.', 'err'); return; }
-  if (busy) return; busy = true;
-  try { const dsts = resolve(target); for (let rep = 0; rep < 2; rep++) { for (const dst of dsts) { for (const a of accesses) { await sendAccess(dst, a); await sleep(35); } } await sleep(110); } setStatus('Sent ✓', 'ok'); }
+let target = (UI.target === 'all' || resolve(UI.target).length) ? UI.target : 'all';
+// One command at a time. A tap that lands while another is sending is kept and
+// sent next (latest wins) instead of being dropped.
+async function command(accesses, tgt) {
+  if (!connected) { setStatus('Connect Bluetooth first.', 'err'); return; }
+  if (busy) { pending = [accesses, tgt]; return; }
+  busy = true;
+  try { const dsts = resolve(tgt || target); for (let rep = 0; rep < 2; rep++) { for (const dst of dsts) { for (const a of accesses) { await sendAccess(dst, a); await sleep(35); } } await sleep(110); } stateFresh = true; if (!partyOn) setStatus('Sent ✓', 'ok'); }
   catch (err) { setStatus('Send failed: ' + (err.message || err), 'err'); }
-  finally { busy = false; }
+  finally { busy = false; if (pending && connected) { const p = pending; pending = null; command(p[0], p[1]); } }
 }
 
 /* ===== Color helpers ===== */
@@ -366,17 +872,71 @@ function hsv2rgb(h, s, v) { h /= 360; let i = Math.floor(h * 6), f = h * 6 - i, 
 function rgb2hsv(r, g, b) { const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h = 0; const s = mx ? (mx - mn) / mx : 0, v = mx / 255; if (mx !== mn) { const d = mx - mn; if (mx === r) h = ((g - b) / d) % 6; else if (mx === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h *= 60; if (h < 0) h += 360; } return [h, s, v]; }
 function kelvinToRGB(k) { const t = k / 100; let r, g, b; if (t <= 66) { r = 255; g = 99.4708025861 * Math.log(t) - 161.1195681661; } else { r = 329.698727446 * Math.pow(t - 60, -0.1332047592); g = 288.1221695283 * Math.pow(t - 60, -0.0755148492); } if (t >= 66) b = 255; else if (t <= 19) b = 0; else b = 138.5177312231 * Math.log(t - 10) - 305.0447927307; const cl = x => Math.max(0, Math.min(255, Math.round(x))); return [cl(r), cl(g), cl(b)]; }
 const hx = n => n.toString(16).padStart(2, '0');
+const css = rgb => `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+const hexOf = rgb => (hx(rgb[0]) + hx(rgb[1]) + hx(rgb[2])).toUpperCase();
+const sameRGB = (a, b) => a && b && a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+function luminance(c) { const f = x => { x /= 255; return x <= .03928 ? x / 12.92 : Math.pow((x + .055) / 1.055, 2.4); }; return .2126 * f(c[0]) + .7152 * f(c[1]) + .0722 * f(c[2]); }
+// The interface accent is the lamp colour, lifted until dark text is readable on it.
+function accentFrom(rgb) { const [h, s] = rgb2hsv(rgb[0], rgb[1], rgb[2]); let c = hsv2rgb(h, Math.min(s, .78), 1), i = 0; while (luminance(c) < .42 && i++ < 14) c = c.map(x => Math.round(x + (255 - x) * .14)); return c; }
+function colorName(r, g, b) {
+  const [h, s, v] = rgb2hsv(r, g, b);
+  if (v < .08) return 'Black'; if (s < .12) return v > .85 ? 'White' : 'Grey';
+  const N = [[14, 'Red'], [38, 'Orange'], [52, 'Amber'], [70, 'Yellow'], [100, 'Lime'], [150, 'Green'], [172, 'Mint'], [195, 'Cyan'], [222, 'Sky'], [252, 'Blue'], [275, 'Indigo'], [295, 'Violet'], [325, 'Magenta'], [346, 'Pink'], [361, 'Red']];
+  return (s < .5 ? 'Soft ' : v < .55 ? 'Deep ' : '') + N.find(x => h < x[0])[1];
+}
+function describeK(k) { return k < 2300 ? 'Candlelight' : k < 2800 ? 'Warm white' : k < 3600 ? 'Soft white' : k < 4600 ? 'Neutral white' : k < 5600 ? 'Cool white' : 'Daylight'; }
+function setRange(el) { el.style.setProperty('--p', ((+el.value - +el.min) / (+el.max - +el.min)).toFixed(4)); }
+
+/* ===== Names ===== */
+const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
+const defaultName = id => id === 'all' ? 'All lamps' : NICE[id] || ('Lamp ' + id.replace('OASIS_', '').slice(-4).toUpperCase());
+const nameOf = id => (UI.names[id] || '').trim() || defaultName(id);
+
+/* ===== Stage: what was last sent from this phone ===== */
+function paintStage() {
+  const root = document.documentElement.style, lk = UI.look, off = UI.power === false;
+  root.setProperty('--glow', lk.rgb.join(' '));
+  root.setProperty('--accent', css(accentFrom(lk.rgb)));
+  root.setProperty('--lvl', off ? '0' : (UI.bright / 100).toFixed(2));
+  const live = partyOn || musicOn;
+  ACCENT = css(accentFrom(lk.rgb));
+  document.body.classList.toggle('is-off', off && !live);
+  $('#lookName').textContent = musicOn ? 'Music · ' + styleOf(musicStyle).label : partyOn ? 'Party · ' + effectOf(partyEffect).label : lk.name;
+  $('#lookSub').textContent = (live ? 'Every room' : nameOf(target)) + ' · ' + (off && !live ? 'Off' : UI.bright + '%');
+  $('#on').classList.toggle('sel', UI.power === true); $('#off').classList.toggle('sel', off);
+  $$('.scene').forEach(b => b.classList.toggle('sel', !live && !!lk.key && b.dataset.key === lk.key));
+}
+let ACCENT = '#ffc66b';
+function setLook(look) { UI.look = look; saveUI(); paintStage(); }
+function applyRGB(rgb, o) {
+  o = o || {};
+  setLook({ name: o.name || colorName(rgb[0], rgb[1], rgb[2]), rgb: rgb.slice(), key: o.key || '' });
+  setPickerRGB(rgb[0], rgb[1], rgb[2]);
+  return command([MESH.cmd.colorMode(true), MESH.cmd.rgb(rgb[0], rgb[1], rgb[2])]);
+}
+// Below 2700K the lamps' white channel bottoms out, so it is sent as a warm RGB glow.
+function applyWhite(k, o) {
+  o = o || {}; const rgb = kelvinToRGB(k);
+  setLook({ name: o.name || describeK(k), rgb, k, key: o.key || '' });
+  $('#kelvin').value = k; paintWhitePreview();
+  if (k >= 2700) return command([MESH.cmd.colorMode(false), MESH.cmd.brightnessTemp(UI.bright, k, Date.now() >>> 0)]);
+  return command([MESH.cmd.colorMode(true), MESH.cmd.rgb(rgb[0], rgb[1], rgb[2])]);
+}
 
 /* ===== Full-spectrum picker ===== */
 let hue = 240, sat = 1, val = 1, colorTimer = null;
 const sv = $('#sv'), huebar = $('.hue');
-function paintPreview() { const [r, g, b] = hsv2rgb(hue, sat, val); $('#swatch').style.background = `rgb(${r},${g},${b})`; $('#hex').textContent = '#' + hx(r) + hx(g) + hx(b); $('#rgbtxt').textContent = `rgb(${r}, ${g}, ${b})`; return [r, g, b]; }
-function sendColor() { const [r, g, b] = paintPreview(); clearTimeout(colorTimer); colorTimer = setTimeout(() => command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]), 120); }
+function paintPreview() { const rgb = hsv2rgb(hue, sat, val); $('#swatch').style.background = css(rgb); if (document.activeElement !== $('#hex')) $('#hex').value = hexOf(rgb); $('#rgbtxt').textContent = rgb.join(' · '); return rgb; }
+function sendColor() { const rgb = paintPreview(); setLook({ name: colorName(rgb[0], rgb[1], rgb[2]), rgb, key: '' }); clearTimeout(colorTimer); colorTimer = setTimeout(() => command([MESH.cmd.colorMode(true), MESH.cmd.rgb(rgb[0], rgb[1], rgb[2])]), 120); }
 function svFromEvent(e) { const rect = sv.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX, cy = e.touches ? e.touches[0].clientY : e.clientY; const x = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)), y = Math.max(0, Math.min(1, (cy - rect.top) / rect.height)); sat = x; val = 1 - y; $('#svh').style.left = (x * 100) + '%'; $('#svh').style.top = (y * 100) + '%'; sendColor(); }
 function hueFromEvent(e) { const rect = huebar.getBoundingClientRect(); const cx = e.touches ? e.touches[0].clientX : e.clientX; const x = Math.max(0, Math.min(1, (cx - rect.left) / rect.width)); hue = x * 360; $('#hueh').style.left = (x * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; sendColor(); }
-function drag(el, handler) { const down = e => { e.preventDefault(); handler(e); const mv = ev => { ev.preventDefault(); handler(ev); }; const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); window.removeEventListener('touchmove', mv); window.removeEventListener('touchend', up); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); window.addEventListener('touchmove', mv, { passive: false }); window.addEventListener('touchend', up); }; el.addEventListener('mousedown', down); el.addEventListener('touchstart', down, { passive: false }); }
+function drag(el, handler, done) { const down = e => { e.preventDefault(); handler(e); const mv = ev => { ev.preventDefault(); handler(ev); }; const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); window.removeEventListener('touchmove', mv); window.removeEventListener('touchend', up); window.removeEventListener('touchcancel', up); if (done) done(); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); window.addEventListener('touchmove', mv, { passive: false }); window.addEventListener('touchend', up); window.addEventListener('touchcancel', up); }; el.addEventListener('mousedown', down); el.addEventListener('touchstart', down, { passive: false }); }
 drag(sv, svFromEvent); drag(huebar, hueFromEvent);
-function setPickerRGB(r, g, b) { const [h, s, v] = rgb2hsv(r, g, b); hue = h; sat = s; val = v; $('#hueh').style.left = (hue / 360 * 100) + '%'; $('#svh').style.left = (sat * 100) + '%'; $('#svh').style.top = ((1 - val) * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; paintPreview(); }
+function setPickerRGB(r, g, b) { const [h, s, v] = rgb2hsv(r, g, b); if (s > 0 && v > 0) hue = h; sat = s; val = v; $('#hueh').style.left = (hue / 360 * 100) + '%'; $('#svh').style.left = (sat * 100) + '%'; $('#svh').style.top = ((1 - val) * 100) + '%'; sv.style.background = `linear-gradient(to top,#000,transparent),linear-gradient(to right,#fff,hsl(${hue} 100% 50%))`; paintPreview(); }
+function applyHex() { const m = $('#hex').value.replace(/[^0-9a-f]/gi, ''); if (m.length !== 6) { paintPreview(); $('#hex').value = hexOf(hsv2rgb(hue, sat, val)); return; } buzz(); applyRGB([0, 2, 4].map(i => parseInt(m.substr(i, 2), 16))); $('#hex').value = m.toUpperCase(); }
+$('#hex').addEventListener('change', applyHex);
+$('#hex').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#hex').blur(); } });
+$('#hex').addEventListener('focus', e => e.target.select());
 
 /* ===== OASIS Originals (matched to the app's scene palette) ===== */
 // {k: kelvin} => true white mode; {rgb:[r,g,b]} => color mode. Values dialed on the lamp.
@@ -385,59 +945,89 @@ const ORIGINALS = [
   ['Amber', { rgb: [255, 174, 29] }], ['Candle', { rgb: [229, 131, 19] }], ['Dusk', { rgb: [203, 88, 8] }],
   ['Maui', { rgb: [255, 70, 1] }], ['Pure Red', { rgb: [255, 0, 0] }],
 ];
+function sceneButton(name, rgb, key, onTap) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'scene'; b.dataset.key = key;
+  b.innerHTML = '<span class="disc"></span><span class="nm"></span>';
+  b.firstChild.style.setProperty('--c', css(rgb)); b.lastChild.textContent = name;
+  b.onclick = onTap; return b;
+}
+function applySpec(spec, name, key) { buzz(); if (spec.k) applyWhite(spec.k, { name, key }); else applyRGB(spec.rgb, { name, key, record: false }); }
 (function buildOriginals() {
   const box = $('#originals');
-  ORIGINALS.forEach(([name, spec]) => {
-    const [r, g, b] = spec.rgb || kelvinToRGB(spec.k);
-    const el = document.createElement('div'); el.className = 'orig';
-    el.innerHTML = `<div class="disc" style="background:rgb(${r},${g},${b})"></div><div class="nm">${name}</div>`;
-    el.onclick = () => {
-      buzz();
-      document.querySelectorAll('.orig').forEach(x => x.classList.remove('sel')); el.classList.add('sel');
-      if (spec.k) command([MESH.cmd.colorMode(false), MESH.cmd.brightnessTemp(100, spec.k, Date.now() >>> 0)]);
-      else command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]);
-    };
-    box.appendChild(el);
-  });
+  ORIGINALS.forEach(([name, spec]) => box.appendChild(sceneButton(name, spec.rgb || kelvinToRGB(spec.k), 'o:' + name, () => applySpec(spec, name, 'o:' + name))));
 })();
 
-/* ===== Full-spectrum vivid presets ===== */
-const VIVID = [[255, 0, 0], [255, 90, 0], [255, 220, 0], [0, 255, 0], [0, 255, 150], [0, 255, 255], [0, 90, 255], [0, 0, 255], [75, 0, 255], [160, 0, 255], [255, 0, 200], [255, 80, 160], [255, 255, 255]];
-(function buildVivid() { const box = $('#vivid'); VIVID.forEach(([r, g, b]) => { const d = document.createElement('div'); d.className = 'ps'; d.style.background = `rgb(${r},${g},${b})`; d.onclick = () => { buzz(); setPickerRGB(r, g, b); command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]); }; box.appendChild(d); }); })();
-
-/* ===== Brightness ===== */
-$('#bright').addEventListener('input', e => $('#brv').textContent = e.target.value + '%');
-let brTimer = null;
-$('#bright').addEventListener('change', e => { clearTimeout(brTimer); brTimer = setTimeout(() => command([MESH.cmd.brightness(+e.target.value, Math.floor(Date.now() / 1000))]), 60); });
-
-/* ===== White & warmth (sub-2700K handled as warm RGB glow) ===== */
-function describeK(k) { return k < 2300 ? 'Candlelight' : k < 2800 ? 'Warm white' : k < 3600 ? 'Soft white' : k < 4600 ? 'Neutral white' : k < 5600 ? 'Cool white' : 'Daylight'; }
-function paintWhitePreview() { const k = +$('#kelvin').value; const [r, g, b] = kelvinToRGB(k); $('#wswatch').style.background = `rgb(${r},${g},${b})`; $('#ktv').textContent = k + 'K'; $('#wdesc').textContent = describeK(k); }
-$('#kelvin').addEventListener('input', paintWhitePreview);
-$('#wbright').addEventListener('input', e => $('#wbrv').textContent = e.target.value + '%');
-$('#applywhite').addEventListener('click', () => {
-  buzz(); const k = +$('#kelvin').value, pct = +$('#wbright').value;
-  if (k >= 2700) { command([MESH.cmd.colorMode(false), MESH.cmd.brightnessTemp(pct, k, Date.now() >>> 0)]); }
-  else { const [r, g, b] = kelvinToRGB(k).map(x => Math.round(x * pct / 100)); command([MESH.cmd.colorMode(true), MESH.cmd.rgb(r, g, b)]); }
+/* ===== My looks (saved on this device) ===== */
+let editingFavs = false;
+function buildFavs() {
+  const box = $('#favs'); box.textContent = '';
+  if (!UI.favs.length) editingFavs = false;
+  box.classList.toggle('editing', editingFavs);
+  UI.favs.forEach(f => {
+    const key = 'f:' + f.id;
+    const b = sceneButton(f.name, f.rgb, key, () => {
+      if (editingFavs) { buzz(); UI.favs = UI.favs.filter(x => x.id !== f.id); saveUI(); buildFavs(); paintStage(); return; }
+      applySpec(f.k ? { k: f.k } : { rgb: f.rgb }, f.name, key);
+    });
+    b.insertAdjacentHTML('beforeend', '<span class="rm">' + icon('x') + '</span>');
+    if (editingFavs) b.setAttribute('aria-label', 'Remove ' + f.name);
+    box.appendChild(b);
+  });
+  $('#favEmpty').classList.toggle('hide', UI.favs.length > 0);
+  $('#favs').classList.toggle('hide', !UI.favs.length);
+  $('#editFavs').classList.toggle('hide', !UI.favs.length);
+  $('#editFavs').textContent = editingFavs ? 'Done' : 'Edit';
+}
+$('#editFavs').addEventListener('click', () => { editingFavs = !editingFavs; buildFavs(); paintStage(); });
+$('#saveLook').addEventListener('click', () => {
+  buzz(); const lk = UI.look;
+  if (partyOn || musicOn) { setStatus('Stop the ' + (musicOn ? 'music' : 'party') + ' to save a look.', 'err'); return; }
+  const dupe = UI.favs.find(f => (lk.k && f.k === lk.k) || (!lk.k && !f.k && sameRGB(f.rgb, lk.rgb)));
+  if (dupe || (lk.key && lk.key[0] === 'o')) { setStatus(dupe ? 'Already in My looks.' : lk.name + ' is already an Original.', ''); return; }
+  if (UI.favs.length >= 12) { setStatus('My looks is full. Remove one in Scenes first.', 'err'); return; }
+  const f = { id: Date.now().toString(36), name: lk.k ? lk.k + 'K' : (lk.name || '#' + hexOf(lk.rgb)), rgb: lk.rgb.slice() };
+  if (lk.k) f.k = lk.k;
+  UI.favs.push(f); UI.look.key = 'f:' + f.id; saveUI(); buildFavs(); paintStage();
+  setStatus('Saved to My looks.', 'ok');
 });
 
+/* ===== Vivid presets ===== */
+const VIVID = [[255, 0, 0], [255, 90, 0], [255, 220, 0], [150, 255, 0], [0, 255, 0], [0, 255, 150], [0, 255, 255], [0, 90, 255], [0, 0, 255], [75, 0, 255], [160, 0, 255], [255, 0, 200], [255, 80, 160], [255, 255, 255]];
+function dot(rgb, record) { const d = document.createElement('button'); d.type = 'button'; d.className = 'ps'; d.style.setProperty('--c', css(rgb)); d.setAttribute('aria-label', colorName(rgb[0], rgb[1], rgb[2]) + ' #' + hexOf(rgb)); d.onclick = () => { buzz(); applyRGB(rgb, { record }); }; return d; }
+(function buildVivid() { const box = $('#vivid'); VIVID.forEach(c => box.appendChild(dot(c, false))); })();
+
+/* ===== Brightness ===== */
+let brTimer = null;
+function paintBright() { const el = $('#bright'); el.value = UI.bright; setRange(el); $('#brv').textContent = UI.bright + '%'; }
+$('#bright').addEventListener('input', e => { UI.bright = +e.target.value; setRange(e.target); $('#brv').textContent = UI.bright + '%'; paintStage(); });
+$('#bright').addEventListener('change', e => { saveUI(); clearTimeout(brTimer); brTimer = setTimeout(() => command([MESH.cmd.brightness(+e.target.value, Math.floor(Date.now() / 1000))]), 60); });
+
+/* ===== White & warmth ===== */
+const WHITES = [['Candle', 2000], ['Warm', 2700], ['Soft', 3000], ['Neutral', 4000], ['Cool', 5000], ['Daylight', 6500]];
+function paintWhitePreview() { const el = $('#kelvin'), k = +el.value; setRange(el); $('#wswatch').style.background = css(kelvinToRGB(k)); $('#ktv').textContent = k + 'K'; $('#wdesc').textContent = describeK(k); $$('#wpresets .chip').forEach(c => c.classList.toggle('on', +c.dataset.k === k)); }
+$('#kelvin').addEventListener('input', paintWhitePreview);
+$('#kelvin').addEventListener('change', e => { buzz(); UI.kelvin = +e.target.value; applyWhite(UI.kelvin); });
+(function buildWhites() { const box = $('#wpresets'); WHITES.forEach(([n, k]) => { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.dataset.k = k; c.textContent = n; c.onclick = () => { buzz(); UI.kelvin = k; applyWhite(k); }; box.appendChild(c); }); })();
+
 /* ===== Power ===== */
-$('#on').addEventListener('click', () => { buzz(); command([MESH.cmd.power(true)]); });
-$('#off').addEventListener('click', () => { buzz(); command([MESH.cmd.power(false)]); });
+function power(on) { buzz(); UI.power = on; saveUI(); paintStage(); command([MESH.cmd.power(on)]); }
+$('#on').addEventListener('click', () => power(true));
+$('#off').addEventListener('click', () => power(false));
 
 /* ===== Tabs ===== */
-const PANES = ['originals', 'color', 'white', 'party'];
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); const c = t.dataset.tab; PANES.forEach(p => $('#pane-' + p).classList.toggle('hide', c !== p)); });
+const PANES = ['scenes', 'color', 'white', 'party', 'music'];
+function showTab(c) { if (PANES.indexOf(c) < 0) c = 'scenes'; UI.tab = c; saveUI(); $$('.tab').forEach(t => { const on = t.dataset.tab === c; t.classList.toggle('on', on); t.setAttribute('aria-selected', on); }); PANES.forEach(p => $('#pane-' + p).classList.toggle('hide', c !== p)); if (c === 'music' && typeof musicOn !== 'undefined' && !musicOn) drawViz(true); }
+$$('.tab').forEach(t => t.onclick = () => showTab(t.dataset.tab));
 
 /* ===== Party mode (two-zone effects: living room vs bedroom) ===== */
-let partyOn = false, partyEffect = 'rainbow';
+let partyOn = false, partyEffect = UI.effect, lastParty = null, wake = null;
 // Continuous speed: slider 0 (slowest) .. 100 (max). Exponential feel.
 function speedParams() {
   const t = Math.min(1, Math.max(0, (+$('#speed').value || 0) / 100));
   return {
-    gap: Math.round(1800 * Math.pow(30 / 1800, t)),    // pause between sweeps: 1800 -> 30 ms
-    send: Math.round(95 * Math.pow(22 / 95, t)),        // pause between sends:  95   -> 22 ms
-    storm: Math.round(4500 * Math.pow(450 / 4500, t)),  // avg calm before a strike
+    gap: Math.round(12000 * Math.pow(30 / 12000, t)),    // pause between sweeps: 12 s -> 30 ms
+    send: Math.round(95 * Math.pow(22 / 95, t)),          // pause between sends:  95  -> 22 ms
+    storm: Math.round(15000 * Math.pow(450 / 15000, t)),  // avg calm before a strike
   };
 }
 const PALETTES = {
@@ -445,36 +1035,75 @@ const PALETTES = {
   ocean: [[0, 90, 255], [0, 210, 210], [0, 130, 255], [0, 255, 170], [60, 0, 255], [0, 200, 255]],
   neon: [[255, 0, 200], [0, 255, 255], [130, 255, 0], [200, 0, 255], [255, 0, 80], [0, 255, 120]],
 };
-const EFFECTS = [['rainbow', '🌈 Rainbow'], ['fade', '✨ Smooth'], ['strobe', '⚡ Strobe'], ['cop', '🚨 Cop'], ['storm', '🌩️ Lightning'], ['sunset', '🌅 Sunset'], ['ocean', '🌊 Ocean'], ['neon', '💜 Neon']];
-const rgbCmd = (c) => MESH.cmd.rgb(c[0], c[1], c[2]);
+const AURORA = [[0, 255, 140], [0, 220, 200], [40, 120, 255], [140, 60, 255], [0, 255, 90]];
+const SPECTRUM = ['#ff3b30', '#ff9500', '#ffd60a', '#34c759', '#32ade6', '#5e5ce6', '#ff2d92'];
+const EFFECTS = [
+  { id: 'rainbow', label: 'Rainbow', desc: 'Color chase', colors: SPECTRUM },
+  { id: 'fade', label: 'Smooth', desc: 'Slow drift', colors: ['#ff7a90', '#ffbf7a', '#9be8b0', '#86bdff', '#c9a3ff'] },
+  { id: 'strobe', label: 'Strobe', desc: 'Flashing white', colors: ['#ffffff', '#3a3632', '#ffffff', '#3a3632', '#ffffff', '#3a3632'], hard: true },
+  { id: 'cop', label: 'Cop', desc: 'Red and blue', colors: ['#ff1a1a', '#1a3cff'], hard: true },
+  { id: 'storm', label: 'Lightning', desc: 'Dark with strikes', colors: ['#03051a', '#10195a', '#e2e7ff', '#10195a', '#03051a'] },
+  { id: 'sunset', label: 'Sunset', desc: 'Warm embers', colors: PALETTES.sunset.map(css) },
+  { id: 'ocean', label: 'Ocean', desc: 'Cool tides', colors: PALETTES.ocean.map(css) },
+  { id: 'neon', label: 'Neon', desc: 'Electric mix', colors: PALETTES.neon.map(css) },
+  { id: 'fire', label: 'Fireplace', desc: 'Warm flicker', colors: ['#7a1c00', '#ff5a00', '#ffb020', '#ff7a00', '#a52a00'] },
+  { id: 'aurora', label: 'Aurora', desc: 'Slow northern lights', colors: AURORA.map(css) },
+  { id: 'breathe', label: 'Breathe', desc: 'Your color, pulsing', colors: ['#2b2723', '#d8cfc2', '#2b2723'] },
+];
+const effectOf = id => EFFECTS.find(e => e.id === id) || EFFECTS[0];
+if (effectOf(partyEffect).id !== partyEffect) partyEffect = 'rainbow';
+function stops(colors, hard) { if (!hard) return colors.join(','); const n = colors.length; return colors.map((c, i) => `${c} ${(i / n * 100).toFixed(1)}% ${((i + 1) / n * 100).toFixed(1)}%`).join(','); }
+const rgbCmd = (c) => { lastParty = c; return MESH.cmd.rgb(c[0], c[1], c[2]); };
 async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
+async function setWake(on) { try { if (on && navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); else if (!on && wake) { await wake.release(); wake = null; } } catch (_) { } }
+function paintParty() {
+  const fx = effectOf(partyEffect);
+  $('#party').classList.toggle('danger', partyOn); $('#party').classList.toggle('primary', !partyOn);
+  $('#partyLabel').textContent = partyOn ? 'Stop party' : 'Start party';
+  $('#partyIcon').setAttribute('href', partyOn ? '#i-stop' : '#i-play');
+  document.documentElement.style.setProperty('--party', `conic-gradient(${stops(fx.colors.concat(fx.hard ? [] : [fx.colors[0]]), fx.hard)})`);
+  document.body.classList.toggle('party', partyOn);
+  $$('#effects .fxc').forEach(c => { const on = c.dataset.id === partyEffect; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+  paintStage();
+}
+function stopParty(msg) {
+  partyOn = false; setWake(false);
+  if (lastParty && Math.max(lastParty[0], lastParty[1], lastParty[2]) > 40) { UI.look = { name: 'After party', rgb: lastParty.slice(), key: '' }; saveUI(); }
+  paintParty(); if (msg) setStatus(msg, 'ok');
+}
 
+let partyGen = 0;
 async function partyLoop() {
+  // Each run has its own number, so a quick stop-then-start can never leave two loops sending.
+  const my = ++partyGen, alive = () => partyOn && my === partyGen;
+  // A pause that ends early when the party stops or the speed slider moves.
+  const nap = async ms => { const sv = $('#speed').value, end = Date.now() + ms; while (alive() && Date.now() < end && $('#speed').value === sv) await sleep(Math.max(1, Math.min(80, end - Date.now()))); };
   const zones = Object.values(CFG.groups);
   if (!zones.length) zones.push(...CFG.lamps.map(l => l[1]));
-  for (const z of zones) { if (!partyOn) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
+  const base = (() => { const c = UI.look.rgb, [h, sa] = rgb2hsv(c[0], c[1], c[2]); return [h, sa]; })();   // for Breathe
+  for (const z of zones) { if (!alive()) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
   let phase = 0, ok = 0;
-  while (partyOn) {
+  while (alive()) {
     const sp = speedParams(), gap = sp.gap, send = sp.send;
     if (partyEffect === 'strobe') {
-      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([255, 255, 255])); }
-      await sleep(Math.max(32, gap / 3));
-      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([1, 0, 1])); }
-      await sleep(Math.max(32, gap / 3)); ok += 2;
+      for (const z of zones) { if (!alive()) break; await safeSend(z, rgbCmd([255, 255, 255])); }
+      await nap(Math.max(32, gap / 3));
+      for (const z of zones) { if (!alive()) break; await safeSend(z, rgbCmd([1, 0, 1])); }
+      await nap(Math.max(32, gap / 3)); ok += 2;
     } else if (partyEffect === 'cop') {
       const red = [255, 0, 0], blue = [0, 0, 255];
       const a = phase % 2 ? red : blue, b = phase % 2 ? blue : red;
       if (zones[0]) await safeSend(zones[0], rgbCmd(a));
       if (zones[1]) await safeSend(zones[1], rgbCmd(b));
-      ok++; await sleep(Math.max(70, gap));
+      ok++; await nap(Math.max(70, gap));
     } else if (partyEffect === 'storm') {
       const DARK = [3, 5, 18];                               // stormy night base
-      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd(DARK)); }
+      for (const z of zones) { if (!alive()) break; await safeSend(z, rgbCmd(DARK)); }
       const q = sp.storm;
-      await sleep(q * 0.35 + Math.random() * q);             // random calm before the strike
-      if (!partyOn) break;
+      await nap(q * 0.35 + Math.random() * q);               // random calm before the strike
+      if (!alive()) break;
       const flashes = 1 + Math.floor(Math.random() * 3);     // flickery multi-flash strike
-      for (let f = 0; f < flashes && partyOn; f++) {
+      for (let f = 0; f < flashes && alive(); f++) {
         const v = 170 + Math.floor(Math.random() * 85);
         for (const z of zones) await safeSend(z, rgbCmd([v, v, 255]));
         await sleep(35 + Math.random() * 55);
@@ -482,50 +1111,240 @@ async function partyLoop() {
         await sleep(45 + Math.random() * 130);
       }
       ok += flashes;
+    } else if (partyEffect === 'fire') {                     // each room flickers on its own
+      for (const z of zones) { if (!alive()) break; if (await safeSend(z, rgbCmd(hsv2rgb(12 + Math.random() * 24, 1, .3 + Math.pow(Math.random(), .7) * .7)))) ok++; await sleep(send); }
+      await nap(Math.min(900, Math.max(50, gap / 5)) * (.5 + Math.random()));
+    } else if (partyEffect === 'aurora') {                   // glide between colors in small steps
+      const n = AURORA.length;
+      for (let i = 0; i < zones.length; i++) { if (!alive()) break; const f = phase / 12 + i * 1.5, a = AURORA[Math.floor(f) % n], b = AURORA[(Math.floor(f) + 1) % n], k = f % 1; if (await safeSend(zones[i], rgbCmd(a.map((x, j) => Math.round(x + (b[j] - x) * k))))) ok++; await sleep(send); }
+      await nap(Math.max(110, gap / 5));
+    } else if (partyEffect === 'breathe') {                  // the look you had, rising and falling
+      const v = .1 + .9 * (.5 - .5 * Math.cos(phase * Math.PI / 12));
+      for (const z of zones) { if (!alive()) break; if (await safeSend(z, rgbCmd(hsv2rgb(base[0], base[1], v)))) ok++; await sleep(send); }
+      await nap(Math.max(60, gap / 8));
     } else if (PALETTES[partyEffect]) {
       const pal = PALETTES[partyEffect];
-      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; if (await safeSend(zones[i], rgbCmd(pal[(phase + i) % pal.length]))) ok++; await sleep(send); }
-      await sleep(gap);
+      for (let i = 0; i < zones.length; i++) { if (!alive()) break; if (await safeSend(zones[i], rgbCmd(pal[(phase + i) % pal.length]))) ok++; await sleep(send); }
+      await nap(gap);
     } else { // rainbow or smooth fade
       const step = partyEffect === 'fade' ? 12 : 40;
-      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; const [r, g, b] = hsv2rgb((phase * step + i * (360 / Math.max(2, zones.length))) % 360, 1, 1); if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++; await sleep(send); }
-      await sleep(partyEffect === 'fade' ? Math.max(40, gap / 3) : gap);
+      for (let i = 0; i < zones.length; i++) { if (!alive()) break; if (await safeSend(zones[i], rgbCmd(hsv2rgb((phase * step + i * (360 / Math.max(2, zones.length))) % 360, 1, 1)))) ok++; await sleep(send); }
+      await nap(partyEffect === 'fade' ? Math.max(40, gap / 3) : gap);
     }
-    setStatus('Party on 🎉  (' + ok + ' sent)', 'ok');
+    if (alive()) setStatus('Party running · ' + ok + ' sent', 'ok');
     phase++;
-    if (dev && dev.gatt && !dev.gatt.connected) { partyOn = false; setStatus('Party stopped — Bluetooth dropped.', 'err'); break; }
+    if (alive() && dev && dev.gatt && !dev.gatt.connected) { stopParty(); setStatus('Party stopped. Bluetooth dropped.', 'err'); break; }
   }
-  partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger');
+  if (alive()) stopParty();
 }
-(function buildEffects() {
-  const box = $('#effects');
-  EFFECTS.forEach(([id, label], idx) => {
-    const c = document.createElement('div'); c.className = 'chip' + (idx === 0 ? ' on' : ''); c.textContent = label;
-    c.onclick = () => { buzz(); partyEffect = id; document.querySelectorAll('#effects .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); };
+function startParty() {
+  if (!connected) { setStatus('Connect Bluetooth first.', 'err'); return; }
+  if (musicOn) stopMusic();
+  partyOn = true; UI.power = true; lastParty = null; setWake(true); paintParty(); setStatus('Party running', 'ok'); partyLoop();
+}
+function buildEffects() {
+  const box = $('#effects'); box.textContent = '';
+  EFFECTS.forEach(fx => {
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'fxc'; c.dataset.id = fx.id;
+    c.innerHTML = '<span class="strip"></span><span><b></b><small></small></span>';
+    c.firstChild.style.setProperty('--g', `linear-gradient(90deg,${stops(fx.colors, fx.hard)})`);
+    c.querySelector('b').textContent = fx.label; c.querySelector('small').textContent = fx.desc;
+    c.onclick = () => { buzz(); partyEffect = fx.id; UI.effect = fx.id; saveUI(); paintParty(); };
     box.appendChild(c);
   });
-})();
-$('#party').addEventListener('click', () => {
+}
+buildEffects();
+$('#party').addEventListener('click', () => { buzz(); if (partyOn) stopParty('Party stopped.'); else startParty(); });
+
+/* ===== Music: the phone's microphone drives the lamps ===== */
+const MSTYLES = [
+  { id: 'pulse', label: 'Pulse', desc: 'Glows with the volume' },
+  { id: 'beat', label: 'Beat', desc: 'New color on every beat' },
+  { id: 'split', label: 'Split', desc: 'Bass and treble by room' },
+];
+const MPALS = [['rainbow', 'Rainbow'], ['sunset', 'Sunset'], ['ocean', 'Ocean'], ['neon', 'Neon'], ['mine', 'My color']];
+const styleOf = id => MSTYLES.find(x => x.id === id) || MSTYLES[0];
+let musicOn = false, musicStyle = styleOf(UI.mstyle).id, musicPal = UI.mpal, musicGen = 0;
+let musicStarting = false, audioCtx = null, analyser = null, micStream = null, simulated = false, vizTimer = null;
+const M = { bins: new Uint8Array(512), level: 0, bass: 0, treble: 0, beats: 0, lastBeat: 0, max: .15, avgBass: 0, shown: null };
+function musicPalette() {
+  if (musicPal === 'mine') { const c = UI.look.rgb, [h, sa] = rgb2hsv(c[0], c[1], c[2]); return [0, 24, -24, 48].map(o => hsv2rgb((h + o + 360) % 360, Math.max(.6, sa), 1)); }
+  return PALETTES[musicPal] || [0, 60, 120, 180, 240, 300].map(h => hsv2rgb(h, 1, 1));
+}
+// Reads the microphone ~30 times a second: overall level, bass, treble and beats.
+function analyse() {
+  const n = M.bins.length, now = Date.now();
+  if (simulated) {   // demo without a microphone: a steady 120 BPM stand-in
+    const ph = (now % 500) / 500, kick = Math.exp(-ph * 6);
+    for (let i = 0; i < n; i++) M.bins[i] = Math.max(0, Math.min(255, (i < 5 ? kick * 235 : 0) + (1 - i / n) * 95 * (.5 + .5 * Math.sin(now / 280 + i * .35)) * (.55 + kick * .45) + Math.random() * 18));
+  } else analyser.getByteFrequencyData(M.bins);
+  const hz = (audioCtx ? audioCtx.sampleRate : 48000) / 2 / n;
+  const band = (lo, hi) => { const a = Math.max(1, Math.floor(lo / hz)), b = Math.min(n - 1, Math.ceil(hi / hz)); let t = 0; for (let i = a; i <= b; i++) t += M.bins[i]; return t / ((b - a + 1) * 255); };
+  const sens = +$('#msens').value / 50;                      // 0.2 .. 2
+  const bass = band(40, 180), mid = band(180, 2000), tre = band(2000, 9000), raw = (bass * 1.2 + mid + tre * .8) / 3;
+  M.max = Math.max(raw, M.max * .997, .05 / sens);           // follows the room's loudness, so any volume works
+  const lvl = Math.min(1, raw / M.max * Math.min(1.3, .55 + sens * .45));
+  M.level += (lvl - M.level) * (lvl > M.level ? .6 : .18);   // quick to rise, slow to fall
+  M.bass = Math.min(1, bass / Math.max(.08, M.max * 1.3)); M.treble = Math.min(1, tre / Math.max(.04, M.max * .7));
+  if (bass > M.avgBass * (1.6 - sens * .25) + .02 && bass > .06 / sens && now - M.lastBeat > 230) { M.beats++; M.lastBeat = now; }
+  M.avgBass += (bass - M.avgBass) * .06;
+}
+function drawViz(idle) {
+  const cv = $('#viz'), dpr = Math.min(2, window.devicePixelRatio || 1), W = cv.clientWidth, H = cv.clientHeight;
+  if (!W) return;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const cx = cv.getContext('2d'); cx.setTransform(dpr, 0, 0, dpr, 0, 0); cx.clearRect(0, 0, W, H);
+  const bars = 30, pad = 14, gap = 4, bw = (W - pad * 2 - gap * (bars - 1)) / bars, since = Date.now() - M.lastBeat;
+  for (let i = 0; i < bars; i++) {
+    const lo = Math.floor(1 + Math.pow(i / bars, 2) * 300), hi = Math.max(lo + 1, Math.floor(1 + Math.pow((i + 1) / bars, 2) * 300));
+    let v = 0; if (!idle) { for (let k = lo; k < hi; k++) v = Math.max(v, M.bins[k]); v /= 255; }
+    const h = Math.max(4, v * (H - pad * 2)), x = pad + i * (bw + gap), y = (H - h) / 2;
+    cx.globalAlpha = idle ? .25 : .45 + .55 * v; cx.fillStyle = idle ? '#8f8679' : (M.shown && i % 2 ? css(accentFrom(M.shown)) : ACCENT);
+    cx.beginPath(); if (cx.roundRect) cx.roundRect(x, y, bw, h, Math.min(bw / 2, 4)); else cx.rect(x, y, bw, h); cx.fill();
+  }
+  cx.globalAlpha = 1;
+  if (!idle) { const orb = $('.orb'); orb.style.transform = 'scale(' + (1 + M.level * .07 + (since < 120 ? .03 : 0)).toFixed(3) + ')'; if (M.shown) { orb.style.color = css(M.shown); $('.bloom').style.color = css(M.shown); } }
+}
+function paintMusic() {
+  $('#music').classList.toggle('danger', musicOn); $('#music').classList.toggle('primary', !musicOn);
+  $('#musicLabel').textContent = musicOn ? 'Stop listening' : 'Start listening';
+  $('#musicIcon').setAttribute('href', musicOn ? '#i-stop' : '#i-play');
+  $('#mstate').textContent = !musicOn ? 'Idle' : simulated ? 'Demo beat' : 'Listening';
+  $$('#mstyles .segb').forEach(c => { const on = c.dataset.id === musicStyle; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+  $$('#mpals .chip').forEach(c => { const on = c.dataset.id === musicPal; c.classList.toggle('on', on); c.setAttribute('aria-pressed', on); });
+  if (!musicOn) { const orb = $('.orb'); orb.style.transform = ''; orb.style.color = ''; $('.bloom').style.color = ''; drawViz(true); }
+  paintStage();
+}
+async function startMusic() {
   if (!connected) { setStatus('Connect Bluetooth first.', 'err'); return; }
-  buzz();
-  if (partyOn) { partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger'); setStatus('Party stopped.', 'ok'); return; }
-  partyOn = true; $('#party').textContent = 'Stop Party ⏹'; $('#party').classList.add('danger'); setStatus('Party on 🎉', 'ok'); partyLoop();
-});
-$('#speed').addEventListener('input', e => $('#spv').textContent = 'Speed ' + e.target.value + '%');
+  if (musicOn || musicStarting) return;
+  if (partyOn) stopParty();
+  simulated = DEMO; musicStarting = true;
+  if (!DEMO) try {
+    setStatus('Asking for the microphone…');
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)(); await audioCtx.resume();
+    analyser = audioCtx.createAnalyser(); analyser.fftSize = 1024; analyser.smoothingTimeConstant = .55;
+    audioCtx.createMediaStreamSource(micStream).connect(analyser);
+  } catch (e) {
+    closeAudio();
+    musicStarting = false;
+    setStatus(/denied|allowed|permission/i.test(String(e && (e.name + e.message))) ? 'Microphone access was blocked. Allow it for this page in your browser settings, then try again.' : 'This browser won’t share the microphone with this page, so Music can’t run here.', 'err'); return;
+  }
+  musicStarting = false;
+  if (!connected) { closeAudio(); return; }
+  musicOn = true; UI.power = true; lastParty = null; M.level = 0; M.max = .15; M.avgBass = 0; M.shown = null; setWake(true);
+  vizTimer = setInterval(() => { analyse(); drawViz(false); }, 33);
+  paintMusic(); setStatus(simulated ? 'Demo beat: the microphone is not used in demo mode.' : 'Listening to the room', 'ok'); musicLoop();
+}
+function closeAudio() {
+  try { if (micStream) micStream.getTracks().forEach(t => t.stop()); } catch (_) { }
+  try { if (audioCtx) audioCtx.close(); } catch (_) { }
+  micStream = null; audioCtx = null; analyser = null;
+}
+function stopMusic(msg) {
+  musicOn = false; clearInterval(vizTimer); closeAudio(); setWake(false);
+  if (lastParty && Math.max(lastParty[0], lastParty[1], lastParty[2]) > 40) { UI.look = { name: 'After music', rgb: lastParty.slice(), key: '' }; saveUI(); }
+  paintMusic(); if (msg) setStatus(msg, 'ok');
+}
+// Turns what the microphone hears into colors, and only sends when a room's color really changed.
+async function musicLoop() {
+  const my = ++musicGen, alive = () => musicOn && my === musicGen;
+  const zones = Object.values(CFG.groups); if (!zones.length) zones.push(...CFG.lamps.map(l => l[1]));
+  for (const z of zones) { if (!alive()) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
+  const dim = (c, v) => { v = Math.max(.05, Math.min(1, v)); return c.map(x => Math.max(1, Math.round(x * v))); };
+  const last = zones.map(() => null); let idx = 0, seen = M.beats, sent = 0;
+  while (alive()) {
+    const pal = musicPalette(), beat = M.beats !== seen; seen = M.beats;
+    if (beat) idx++;
+    let cols;
+    if (musicStyle === 'beat') cols = zones.map((z, i) => pal[(idx + i) % pal.length]);
+    else if (musicStyle === 'split') cols = zones.map((z, i) => dim(pal[(Math.floor(idx / 4) + i * 2) % pal.length], .08 + .92 * Math.pow(i % 2 ? M.treble : M.bass, 1.3)));
+    else cols = zones.map((z, i) => dim(pal[(idx + i) % pal.length], .06 + .94 * Math.pow(M.level, 1.5)));
+    M.shown = cols[0].map(x => x); if (musicStyle !== 'beat') { const [h, sa] = rgb2hsv(cols[0][0], cols[0][1], cols[0][2]); M.shown = hsv2rgb(h, sa, 1); }
+    for (let i = 0; i < zones.length; i++) {
+      if (!alive()) break;
+      const c = cols[i], l = last[i];
+      if (l && Math.abs(l[0] - c[0]) + Math.abs(l[1] - c[1]) + Math.abs(l[2] - c[2]) < 22) continue;
+      if (await safeSend(zones[i], rgbCmd(c))) { last[i] = c; sent++; }
+    }
+    if (alive() && dev && dev.gatt && !dev.gatt.connected) { stopMusic(); setStatus('Music stopped. Bluetooth dropped.', 'err'); break; }
+    await sleep(40);
+  }
+}
+function buildMusicPals() {
+  const box = $('#mpals'); box.textContent = '';
+  if (!MPALS.some(x => x[0] === musicPal)) musicPal = 'rainbow';
+  MPALS.forEach(([id, label]) => { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip'; c.dataset.id = id; c.textContent = label; c.onclick = () => { buzz(); musicPal = id; UI.mpal = id; saveUI(); paintMusic(); }; box.appendChild(c); });
+}
+(function buildMusic() {
+  const box = $('#mstyles');
+  MSTYLES.forEach(st => { const c = document.createElement('button'); c.type = 'button'; c.className = 'segb'; c.dataset.id = st.id; c.innerHTML = '<b></b><small></small>'; c.firstChild.textContent = st.label; c.lastChild.textContent = st.desc; c.onclick = () => { buzz(); musicStyle = st.id; UI.mstyle = st.id; saveUI(); paintMusic(); }; box.appendChild(c); });
+  buildMusicPals();
+})();
+$('#music').addEventListener('click', () => { buzz(); if (musicOn) stopMusic('Music stopped.'); else startMusic(); });
+$('#msens').addEventListener('input', e => { setRange(e.target); $('#msv').textContent = e.target.value + '%'; });
+$('#msens').addEventListener('change', e => { UI.msens = +e.target.value; saveUI(); });
+window.addEventListener('resize', () => { if (!musicOn) drawViz(true); });
+$('#speed').addEventListener('input', e => { setRange(e.target); $('#spv').textContent = e.target.value + '%'; });
+$('#speed').addEventListener('change', e => { UI.speed = +e.target.value; saveUI(); });
 
 /* ===== Targets ===== */
-const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
-(function buildTargets() { const box = $('#targets'); const add = (id, txt, on) => { const c = document.createElement('div'); c.className = 'chip' + (on ? ' on' : ''); c.textContent = txt; c.onclick = () => { buzz(); target = id; document.querySelectorAll('.chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); }; box.appendChild(c); }; add('all', 'All', true); Object.keys(CFG.groups).forEach(g => add(g, NICE[g] || g, false)); CFG.lamps.forEach(([n]) => add(n, n.replace('OASIS_', 'Lamp '), false)); })();
+function buildTargets() {
+  const box = $('#targets'); box.textContent = '';
+  const add = (id, ic) => { const c = document.createElement('button'); c.type = 'button'; c.className = 'chip' + (id === target ? ' on' : ''); c.setAttribute('aria-pressed', id === target); c.innerHTML = icon(ic) + '<span></span>'; c.lastChild.textContent = id === 'all' ? 'All' : nameOf(id); c.onclick = () => { buzz(); target = id; UI.target = id; saveUI(); buildTargets(); paintStage(); }; box.appendChild(c); };
+  add('all', 'all'); Object.keys(CFG.groups).forEach(g => add(g, 'room'));
+  const sep = document.createElement('span'); sep.className = 'chip-sep'; box.appendChild(sep);
+  CFG.lamps.forEach(([n]) => add(n, 'lamp'));
+}
+
+/* ===== Settings sheet ===== */
+let sheetReturn = null;
+function openSheet() { sheetReturn = document.activeElement; buildNames(); document.body.classList.add('sheet-open'); $('#sheet').scrollTop = 0; setTimeout(() => $('#sheetClose').focus(), 60); }
+function closeSheet() { document.body.classList.remove('sheet-open'); if (sheetReturn && sheetReturn.focus) sheetReturn.focus(); }
+$('#moreBtn').addEventListener('click', openSheet);
+$('#sheetClose').addEventListener('click', closeSheet); $('#scrim').addEventListener('click', closeSheet);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+function buildNames() {
+  const box = $('#names'); box.textContent = '';
+  const add = (id, ic, tag) => {
+    const l = document.createElement('label'); l.innerHTML = icon(ic) + '<input type="text" maxlength="18" autocomplete="off" spellcheck="false"><small></small>';
+    const inp = l.querySelector('input'); inp.id = 'name-' + id; inp.placeholder = defaultName(id); inp.value = UI.names[id] || ''; inp.setAttribute('aria-label', 'Name for ' + defaultName(id));
+    l.querySelector('small').textContent = tag;
+    inp.addEventListener('input', () => { const v = inp.value.trim(); if (v) UI.names[id] = v; else delete UI.names[id]; saveUI(); buildTargets(); paintStage(); });
+    box.appendChild(l);
+  };
+  Object.keys(CFG.groups).forEach(g => add(g, 'room', 'Room'));
+  CFG.lamps.forEach(([n]) => add(n, 'lamp', n.replace('OASIS_', '')));
+}
+$('#disconnect').addEventListener('click', () => {
+  if (!connected) { closeSheet(); connect(); return; }
+  userLeft = true;
+  if (DEMO) onDisconnect(); else { try { dev.gatt.disconnect(); } catch (_) { onDisconnect(); } }
+  closeSheet();
+});
+function paintIdentity() { $('#devSrc').textContent = CFG.source.toString(16).toUpperCase().padStart(4, '0'); }
+$('#newId').addEventListener('click', () => { buzz(); rotateIdentity(); paintIdentity(); setStatus('New phone ID set. Try a look now.', 'ok'); closeSheet(); });
+$('#connPill').addEventListener('click', () => { if (connected) openSheet(); else connect(); });
 
 /* ===== One-time key setup ===== */
 function extractKeys(text) { const m = (text || '').match(/[0-9a-fA-F]{32}/g); return (m && m.length >= 2) ? { net: m[0].toLowerCase(), app: m[1].toLowerCase() } : null; }
-$('#savekeys').addEventListener('click', () => { const k = extractKeys($('#keyin').value); if (!k) { setStatus('That didn’t contain two 32-character keys — paste the whole setup link.', 'err'); return; } localStorage.setItem('oasis_net', k.net); localStorage.setItem('oasis_app', k.app); location.reload(); });
+$('#savekeys').addEventListener('click', () => { const k = extractKeys($('#keyin').value); if (!k) { setStatus('That didn’t contain two 32-character keys. Paste the whole setup link.', 'err'); return; } localStorage.setItem('oasis_net', k.net); localStorage.setItem('oasis_app', k.app); location.reload(); });
 $('#connect').addEventListener('click', connect);
-if (!KEYS) { $('#setupcard').classList.remove('hide'); $('#connect').textContent = 'Finish setup first'; setStatus('First time on this device? Do the one-time setup below.'); }
-if (!navigator.bluetooth) $('#hint').textContent = 'On iPhone, open this page in the free Bluefy app (Safari/Chrome can’t do Bluetooth). On Android, use Chrome.';
 
 /* init */
-setPickerRGB(0, 0, 255); paintWhitePreview();
+setLocked(true);
+paintIdentity();
+$('#speed').value = UI.speed; setRange($('#speed')); $('#spv').textContent = UI.speed + '%';
+$('#kelvin').value = UI.look.k || UI.kelvin;
+buildTargets(); buildFavs(); paintBright(); paintWhitePreview();
+setPickerRGB(UI.look.rgb[0], UI.look.rgb[1], UI.look.rgb[2]);
+$('#msens').value = UI.msens; setRange($('#msens')); $('#msv').textContent = UI.msens + '%';
+delete UI.photo; showTab(UI.tab); paintParty(); paintMusic();
+if (DEMO) { $('#connectLabel').textContent = 'Start demo'; setStatus('Demo mode: explore without lamps.'); connect(); }
+else if (!KEYS) { $('#setupcard').classList.remove('hide'); $('#connectLabel').textContent = 'Finish setup first'; setStatus('First time on this device? Do the one-time setup above.'); }
+else setStatus('Tap connect, then choose a lamp.');
+if (!navigator.bluetooth && !DEMO) $('#hint').textContent = 'On iPhone, open this page in the free Bluefy app (Safari and Chrome can’t do Bluetooth). On Android, use Chrome.';
 </script>
 </body>
 </html>
