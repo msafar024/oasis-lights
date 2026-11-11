@@ -155,8 +155,8 @@
       <div class="label">Effect</div>
       <div class="seg" id="effects"></div>
       <button class="btn primary" id="party" style="width:100%;margin-top:16px;font-size:17px">Start Party 🎉</button>
-      <div class="srow" style="margin-top:18px"><span class="end">Chill</span><span class="val" id="spv">Groovy</span><span class="end">Rave</span></div>
-      <input type="range" id="speed" min="0" max="2" step="1" value="1">
+      <div class="srow" style="margin-top:18px"><span class="end">🐢 Slow</span><span class="val" id="spv">Speed 55%</span><span class="end">Max ⚡</span></div>
+      <input type="range" id="speed" min="0" max="100" step="1" value="55">
       <div class="note" style="margin-top:12px">Only sends colors — can't harm the lamps. Stop halts it instantly. Change the effect live while it runs.</div>
     </div>
 
@@ -376,14 +376,21 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.quer
 
 /* ===== Party mode (two-zone effects: living room vs bedroom) ===== */
 let partyOn = false, partyEffect = 'rainbow';
-const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave
+// Continuous speed: slider 0 (slowest) .. 100 (max). Exponential feel.
+function speedParams() {
+  const t = Math.min(1, Math.max(0, (+$('#speed').value || 0) / 100));
+  return {
+    gap: Math.round(1800 * Math.pow(30 / 1800, t)),    // pause between sweeps: 1800 -> 30 ms
+    send: Math.round(95 * Math.pow(22 / 95, t)),        // pause between sends:  95   -> 22 ms
+    storm: Math.round(4500 * Math.pow(450 / 4500, t)),  // avg calm before a strike
+  };
+}
 const PALETTES = {
   sunset: [[255, 60, 0], [255, 110, 0], [255, 30, 70], [230, 0, 90], [255, 150, 20], [200, 0, 120]],
   ocean: [[0, 90, 255], [0, 210, 210], [0, 130, 255], [0, 255, 170], [60, 0, 255], [0, 200, 255]],
   neon: [[255, 0, 200], [0, 255, 255], [130, 255, 0], [200, 0, 255], [255, 0, 80], [0, 255, 120]],
 };
 const EFFECTS = [['rainbow', '🌈 Rainbow'], ['fade', '✨ Smooth'], ['strobe', '⚡ Strobe'], ['cop', '🚨 Cop'], ['storm', '🌩️ Lightning'], ['sunset', '🌅 Sunset'], ['ocean', '🌊 Ocean'], ['neon', '💜 Neon']];
-const STORM_QUIET = [2800, 1500, 600];  // avg ms between strikes by speed
 const rgbCmd = (c) => MESH.cmd.rgb(c[0], c[1], c[2]);
 async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
 
@@ -393,22 +400,22 @@ async function partyLoop() {
   for (const z of zones) { if (!partyOn) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
   let phase = 0, ok = 0;
   while (partyOn) {
-    const gap = SPEED_GAP[+$('#speed').value] || 260;
+    const sp = speedParams(), gap = sp.gap, send = sp.send;
     if (partyEffect === 'strobe') {
       for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([255, 255, 255])); }
-      await sleep(Math.max(55, gap / 4));
+      await sleep(Math.max(32, gap / 3));
       for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([1, 0, 1])); }
-      await sleep(Math.max(55, gap / 4)); ok += 2;
+      await sleep(Math.max(32, gap / 3)); ok += 2;
     } else if (partyEffect === 'cop') {
       const red = [255, 0, 0], blue = [0, 0, 255];
       const a = phase % 2 ? red : blue, b = phase % 2 ? blue : red;
       if (zones[0]) await safeSend(zones[0], rgbCmd(a));
       if (zones[1]) await safeSend(zones[1], rgbCmd(b));
-      ok++; await sleep(Math.max(130, gap));
+      ok++; await sleep(Math.max(70, gap));
     } else if (partyEffect === 'storm') {
       const DARK = [3, 5, 18];                               // stormy night base
       for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd(DARK)); }
-      const q = STORM_QUIET[+$('#speed').value] || 1500;
+      const q = sp.storm;
       await sleep(q * 0.35 + Math.random() * q);             // random calm before the strike
       if (!partyOn) break;
       const flashes = 1 + Math.floor(Math.random() * 3);     // flickery multi-flash strike
@@ -422,11 +429,11 @@ async function partyLoop() {
       ok += flashes;
     } else if (PALETTES[partyEffect]) {
       const pal = PALETTES[partyEffect];
-      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; if (await safeSend(zones[i], rgbCmd(pal[(phase + i) % pal.length]))) ok++; await sleep(70); }
+      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; if (await safeSend(zones[i], rgbCmd(pal[(phase + i) % pal.length]))) ok++; await sleep(send); }
       await sleep(gap);
     } else { // rainbow or smooth fade
       const step = partyEffect === 'fade' ? 12 : 40;
-      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; const [r, g, b] = hsv2rgb((phase * step + i * (360 / Math.max(2, zones.length))) % 360, 1, 1); if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++; await sleep(70); }
+      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; const [r, g, b] = hsv2rgb((phase * step + i * (360 / Math.max(2, zones.length))) % 360, 1, 1); if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++; await sleep(send); }
       await sleep(partyEffect === 'fade' ? Math.max(40, gap / 3) : gap);
     }
     setStatus('Party on 🎉  (' + ok + ' sent)', 'ok');
@@ -449,7 +456,7 @@ $('#party').addEventListener('click', () => {
   if (partyOn) { partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger'); setStatus('Party stopped.', 'ok'); return; }
   partyOn = true; $('#party').textContent = 'Stop Party ⏹'; $('#party').classList.add('danger'); setStatus('Party on 🎉', 'ok'); partyLoop();
 });
-$('#speed').addEventListener('input', e => $('#spv').textContent = ['Chill', 'Groovy', 'Rave'][+e.target.value]);
+$('#speed').addEventListener('input', e => $('#spv').textContent = 'Speed ' + e.target.value + '%');
 
 /* ===== Targets ===== */
 const NICE = { livingRoomID: 'Living Room', bedroomID: 'Bedroom' };
