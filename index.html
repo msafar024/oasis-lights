@@ -152,11 +152,12 @@
 
     <!-- Party -->
     <div class="card pane hide" id="pane-party">
-      <div class="label">Party mode 🎉</div>
-      <div class="note">Your lamps chase through the rainbow together. It only sends colors — it can't harm the lamps — and Stop halts it instantly.</div>
-      <button class="btn primary" id="party" style="width:100%;margin-top:12px;font-size:17px">Start Party 🎉</button>
+      <div class="label">Effect</div>
+      <div class="seg" id="effects"></div>
+      <button class="btn primary" id="party" style="width:100%;margin-top:16px;font-size:17px">Start Party 🎉</button>
       <div class="srow" style="margin-top:18px"><span class="end">Chill</span><span class="val" id="spv">Groovy</span><span class="end">Rave</span></div>
       <input type="range" id="speed" min="0" max="2" step="1" value="1">
+      <div class="note" style="margin-top:12px">Only sends colors — can't harm the lamps. Stop halts it instantly. Change the effect live while it runs.</div>
     </div>
 
     <div class="card">
@@ -373,31 +374,74 @@ $('#off').addEventListener('click', () => { buzz(); command([MESH.cmd.power(fals
 const PANES = ['originals', 'color', 'white', 'party'];
 document.querySelectorAll('.tab').forEach(t => t.onclick = () => { document.querySelectorAll('.tab').forEach(x => x.classList.remove('on')); t.classList.add('on'); const c = t.dataset.tab; PANES.forEach(p => $('#pane-' + p).classList.toggle('hide', c !== p)); });
 
-/* ===== Party mode (rainbow chase across lamps) ===== */
-let partyOn = false;
-const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave: pause between sweeps (ms)
-async function safeSend(dst, access) { try { await sendAccess(dst, access); return true; } catch (e) { return false; } }
+/* ===== Party mode (two-zone effects: living room vs bedroom) ===== */
+let partyOn = false, partyEffect = 'rainbow';
+const SPEED_GAP = [620, 260, 90];   // Chill / Groovy / Rave
+const PALETTES = {
+  sunset: [[255, 60, 0], [255, 110, 0], [255, 30, 70], [230, 0, 90], [255, 150, 20], [200, 0, 120]],
+  ocean: [[0, 90, 255], [0, 210, 210], [0, 130, 255], [0, 255, 170], [60, 0, 255], [0, 200, 255]],
+  neon: [[255, 0, 200], [0, 255, 255], [130, 255, 0], [200, 0, 255], [255, 0, 80], [0, 255, 120]],
+};
+const EFFECTS = [['rainbow', '🌈 Rainbow'], ['fade', '✨ Smooth'], ['strobe', '⚡ Strobe'], ['cop', '🚨 Cop'], ['storm', '🌩️ Lightning'], ['sunset', '🌅 Sunset'], ['ocean', '🌊 Ocean'], ['neon', '💜 Neon']];
+const STORM_QUIET = [2800, 1500, 600];  // avg ms between strikes by speed
+const rgbCmd = (c) => MESH.cmd.rgb(c[0], c[1], c[2]);
+
 async function partyLoop() {
-  // Use the ROOM GROUPS — the same addressing your normal colors use (proven to work).
   const zones = Object.values(CFG.groups);
   if (!zones.length) zones.push(...CFG.lamps.map(l => l[1]));
-  let phase = 0, ok = 0;
   for (const z of zones) { if (!partyOn) break; await safeSend(z, MESH.cmd.colorMode(true)); await sleep(80); }
+  let phase = 0, ok = 0;
   while (partyOn) {
-    for (let i = 0; i < zones.length; i++) {
+    const gap = SPEED_GAP[+$('#speed').value] || 260;
+    if (partyEffect === 'strobe') {
+      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([255, 255, 255])); }
+      await sleep(Math.max(55, gap / 4));
+      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd([1, 0, 1])); }
+      await sleep(Math.max(55, gap / 4)); ok += 2;
+    } else if (partyEffect === 'cop') {
+      const red = [255, 0, 0], blue = [0, 0, 255];
+      const a = phase % 2 ? red : blue, b = phase % 2 ? blue : red;
+      if (zones[0]) await safeSend(zones[0], rgbCmd(a));
+      if (zones[1]) await safeSend(zones[1], rgbCmd(b));
+      ok++; await sleep(Math.max(130, gap));
+    } else if (partyEffect === 'storm') {
+      const DARK = [3, 5, 18];                               // stormy night base
+      for (const z of zones) { if (!partyOn) break; await safeSend(z, rgbCmd(DARK)); }
+      const q = STORM_QUIET[+$('#speed').value] || 1500;
+      await sleep(q * 0.35 + Math.random() * q);             // random calm before the strike
       if (!partyOn) break;
-      // each room sits on a different part of the rainbow, and the whole thing rotates
-      const [r, g, b] = hsv2rgb((phase * 36 + i * (360 / Math.max(2, zones.length))) % 360, 1, 1);
-      if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++;
-      await sleep(80);
+      const flashes = 1 + Math.floor(Math.random() * 3);     // flickery multi-flash strike
+      for (let f = 0; f < flashes && partyOn; f++) {
+        const v = 170 + Math.floor(Math.random() * 85);
+        for (const z of zones) await safeSend(z, rgbCmd([v, v, 255]));
+        await sleep(35 + Math.random() * 55);
+        for (const z of zones) await safeSend(z, rgbCmd(DARK));
+        await sleep(45 + Math.random() * 130);
+      }
+      ok += flashes;
+    } else if (PALETTES[partyEffect]) {
+      const pal = PALETTES[partyEffect];
+      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; if (await safeSend(zones[i], rgbCmd(pal[(phase + i) % pal.length]))) ok++; await sleep(70); }
+      await sleep(gap);
+    } else { // rainbow or smooth fade
+      const step = partyEffect === 'fade' ? 12 : 40;
+      for (let i = 0; i < zones.length; i++) { if (!partyOn) break; const [r, g, b] = hsv2rgb((phase * step + i * (360 / Math.max(2, zones.length))) % 360, 1, 1); if (await safeSend(zones[i], MESH.cmd.rgb(r, g, b))) ok++; await sleep(70); }
+      await sleep(partyEffect === 'fade' ? Math.max(40, gap / 3) : gap);
     }
-    setStatus('Party on 🎉  (' + ok + ' colors sent)', 'ok');
+    setStatus('Party on 🎉  (' + ok + ' sent)', 'ok');
     phase++;
     if (dev && dev.gatt && !dev.gatt.connected) { partyOn = false; setStatus('Party stopped — Bluetooth dropped.', 'err'); break; }
-    await sleep(SPEED_GAP[+$('#speed').value] || 260);
   }
   partyOn = false; $('#party').textContent = 'Start Party 🎉'; $('#party').classList.remove('danger');
 }
+(function buildEffects() {
+  const box = $('#effects');
+  EFFECTS.forEach(([id, label], idx) => {
+    const c = document.createElement('div'); c.className = 'chip' + (idx === 0 ? ' on' : ''); c.textContent = label;
+    c.onclick = () => { buzz(); partyEffect = id; document.querySelectorAll('#effects .chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); };
+    box.appendChild(c);
+  });
+})();
 $('#party').addEventListener('click', () => {
   if (!connected) { setStatus('Connect Bluetooth first.', 'err'); return; }
   buzz();
